@@ -6,7 +6,10 @@ Plug-in for [GIMP](http://gimp.org) (__happy 20th birthday!!!__) raster editor, 
 of multi-layered images to corresponding layers of the 2D animation package [Synfig](http://synfig.org).
 
 #Usage
-```<Image>/File/Export/Synfig```
+
+```
+<Image>/File/Export/Synfig
+```
 
 Exports gimp document to synfig's canvas and png images
 if output is omited then script saves image to same dir
