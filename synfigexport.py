@@ -20,6 +20,8 @@
 #   2008-01-31  first public release
 #   2008-04-26  gimp-2.2 compatibility fix by dooglus
 #   2008-08-18  now works without alpha channel
+#   2015-11-25  this fork (https://github.com/d-j-a-y/Gimp2Synfig)
+#   2015-12-03  fix empty name error + add choose file dialog
 #
 
 from gimpfu import *
@@ -179,14 +181,18 @@ def gimp2synfig_mode_converter(mode):
     return modes[mode]
 
 def python_fu_exportsynfig(img,layer, output, span, doinvisible, applymask, dozoom, dorot, dotrans):
+    default_prefix = img.filename.split('.xcf')[0]
     if output:
         prefix = os.path.splitext(output)[0]
         suffix = os.path.splitext(output)[1]
         suffix = "sifz"
     else:
-        prefix = img.filename.split('.xcf')[0]
+        prefix = default_prefix
         suffix = "sifz"
     name = os.path.basename(prefix)
+    if not len(name):
+        name = os.path.basename(default_prefix)
+
     prefix = os.path.dirname(prefix)
     layersprefix = os.path.join(prefix,"%s_layers"%name)
 
@@ -312,11 +318,11 @@ register(
     "Export document to synfig's format\nBy default saves to same dir as source image",
     "AkhIL",
     "AkhIL",
-    "2008-08-18",
+    "2015-12-03",
     "<Image>/File/E_xport/_Synfig",
     "RGB*, GRAY*",
     [
-        (PF_STRING, "output",   "output path (optional)", ""),
+        (PF_FILE, "output",   "output path (optional)", ""),
         (PF_FLOAT,  "span",     "Image Span",9.1788),
         (PF_BOOL,   "doinvisible",   "Export invisible layers",True),
         (PF_BOOL,   "applymask",   "Apply layer masks",False),
