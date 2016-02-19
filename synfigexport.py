@@ -24,6 +24,8 @@
 #   2015-12-03  fix empty name error + add choose file dialog
 #
 
+#TODO switch layer has option, fix accordlngly the canvas version
+
 from gimpfu import *
 import os
 import gzip
@@ -324,6 +326,7 @@ register(
     [
         (PF_FILE, "output",   "output path (optional)", ""),
         (PF_FLOAT,  "span",     "Image Span",9.1788),
+        (PF_BOOL,   "doswitchgroup",   "Group in a single Switch Layer (synfig >= 1.0) ",True),
         (PF_BOOL,   "doinvisible",   "Export invisible layers",True),
         (PF_BOOL,   "applymask",   "Apply layer masks",False),
         (PF_BOOL,   "dozoom",   "Add zoom layers",False),
