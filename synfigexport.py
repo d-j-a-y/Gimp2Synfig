@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 # <Image>/File/Export/Synfig
 # exports gimp document to synfig's canvas and png images
@@ -26,9 +27,25 @@
 
 #TODO switch layer has option, fix accordlngly the canvas version
 
+############################################################
+# Libraries
+############################################################
+
 from gimpfu import *
 import os
 import gzip
+
+# Localization (l10n)
+#
+# use with _("foo") around all strings, to indicate “translatable”
+
+import gettext
+locale_directory = gimp.locale_directory
+gettext.install("gimp20-python", locale_directory, unicode=True)
+
+############################################################
+# Synfig Studio layer xml templates
+############################################################
 
 documentbegin = """\
 <canvas version="0.3" width="%(width)i" height="%(height)i" xres="%(xres)f" yres="%(yres)f" view-box="-%(x)f %(y)f %(x)f -%(y)f" >
@@ -191,6 +208,10 @@ switchlayerend = """
   </layer>
 """
 
+############################################################
+# Synfig Studio blend definition
+############################################################
+
 # from synfig-core/src/synfig/color.h
 BLEND_COMPOSITE=0
 BLEND_STRAIGHT=1
@@ -214,6 +235,11 @@ BLEND_LUMINANCE=11
 BLEND_ALPHA_BRIGHTEN=14
 BLEND_ALPHA_DARKEN=15
 BLEND_ALPHA_OVER=19
+
+
+############################################################
+# Main functions & content
+############################################################
 
 def gimp2synfig_mode_converter(mode):
     """
@@ -377,27 +403,32 @@ def python_fu_exportsynfig(img, layer, output, span, doswitchgroup, doinvisible,
     siffile.write(documentend)
     siffile.close()
 
+############################################################
+# Register function
+############################################################
 
 register(
-    "python_fu_exportsynfig",
-    "Export document to synfig's format",
-    "Export document to synfig's format\nBy default saves to same dir as source image",
-    "AkhIL",
-    "AkhIL",
-    "2015-12-03",
-    "<Image>/File/Export/Export to S_ynfig",
+    "python_fu_exportsynfig", # Function name
+    _("Export document to synfig's format"), # Blurb / description
+    _("Export document to synfig's format\nBy default saves to same dir as source image"),
+    "AkhIL, d-j-a-y", # Author
+    "AkhIL", # Copyright notice
+    "2015-12-03", #Version date
+    _("Export to S_ynfig"), # Menu label
     "RGB*, GRAY*",
     [
-        (PF_FILE, "output",   "output path (optional)", ""),
-        (PF_FLOAT,  "span",     "Image Span",9.1788),
-        (PF_BOOL,   "doswitchgroup",   "Group in a single Switch Layer (synfig >= 1.0) ",True),
-        (PF_BOOL,   "doinvisible",   "Export invisible layers",True),
-        (PF_BOOL,   "applymask",   "Apply layer masks",False),
-        (PF_BOOL,   "dozoom",   "Add zoom layers",False),
-        (PF_BOOL,   "dorot",   "Add rotate layers",False),
-        (PF_BOOL,   "dotrans",   "Add translate layers",False)
+        (PF_FILE, "output",   _("Output path (optional)"), ""),
+        (PF_FLOAT,  "span",     _("Image Span"),9.1788),
+        (PF_BOOL,   "doswitchgroup",   _("Group in a single Switch Layer (synfig >= 1.0)"),False),
+        (PF_BOOL,   "doinvisible",   _("Export invisible layers"),True),
+        (PF_BOOL,   "applymask",   _("Apply layer masks"),False),
+        (PF_BOOL,   "dozoom",   _("Add zoom layers"),False),
+        (PF_BOOL,   "dorot",   _("Add rotate layers"),False),
+        (PF_BOOL,   "dotrans",   _("Add translate layers"),False)
     ],
-    [],
-    python_fu_exportsynfig)
-
+    [], # No results
+    python_fu_exportsynfig, # Internal function name
+    menu="<Image>/File/Export",  # Register in menu
+    domain=("gimp20-python", locale_directory)
+    )
 main()
