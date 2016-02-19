@@ -127,6 +127,70 @@ translatelayer = """
         </layer>
 """
 
+switchlayerbegin = """
+        <layer type="switch" active="%(active)s" exclude_from_rendering="false" version="0.0" desc="%(name)s">
+         <param name="z_depth">
+           <real value="0.0000000000"/>
+         </param>
+         <param name="amount">
+          <real value="%(amount)f"/>
+         </param>
+         <param name="blend_method">
+          <integer value="0" static="true"/>
+         </param>
+         <param name="origin">
+          <vector>
+            <x>0.0000000000</x>
+            <y>0.0000000000</y>
+          </vector>
+         </param>
+         <param name="transformation">
+          <composite type="transformation">
+           <offset>
+            <vector>
+              <x>0.0000000000</x>
+              <y>0.0000000000</y>
+            </vector>
+           </offset>
+           <angle>
+            <angle value="0.000000"/>
+           </angle>
+        <skew_angle>
+          <angle value="0.000000"/>
+        </skew_angle>
+        <scale>
+          <vector>
+            <x>1.0000000000</x>
+            <y>1.0000000000</y>
+          </vector>
+        </scale>
+        </composite>
+       </param>
+       <param name="canvas">
+        <canvas>
+"""
+
+switchlayerend = """
+      </canvas>
+    </param>
+    <param name="time_dilation">
+      <real value="1.0000000000"/>
+    </param>
+    <param name="time_offset">
+      <time value="0s"/>
+    </param>
+    <param name="children_lock">
+      <bool value="true" static="true"/>
+    </param>
+    <param name="outline_grow">
+      <real value="0.0000000000"/>
+    </param>
+    <param name="layer_name">
+      <string>%(name)s</string>
+    </param>
+  </layer>
+"""
+
 # from synfig-core/src/synfig/color.h
 BLEND_COMPOSITE=0
 BLEND_STRAIGHT=1
@@ -182,7 +246,7 @@ def gimp2synfig_mode_converter(mode):
     }
     return modes[mode]
 
-def python_fu_exportsynfig(img,layer, output, span, doinvisible, applymask, dozoom, dorot, dotrans):
+def python_fu_exportsynfig(img, layer, output, span, doswitchgroup, doinvisible, applymask, dozoom, dorot, dotrans):
     default_prefix = img.filename.split('.xcf')[0]
     if output:
         prefix = os.path.splitext(output)[0]
@@ -321,7 +385,7 @@ register(
     "AkhIL",
     "AkhIL",
     "2015-12-03",
-    "<Image>/File/E_xport/_Synfig",
+    "<Image>/File/Export/Export to S_ynfig",
     "RGB*, GRAY*",
     [
         (PF_FILE, "output",   "output path (optional)", ""),
