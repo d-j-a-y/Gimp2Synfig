@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # <Image>/File/Export/Synfig
@@ -37,7 +37,7 @@ import gzip
 
 # Localization (l10n)
 #
-# use with _("foo") around all strings, to indicate “translatable”
+# use with _("foo") around all strings, to indicate "translatable"
 
 import gettext
 locale_directory = gimp.locale_directory
@@ -143,7 +143,6 @@ translatelayer = """
           </param>
         </layer>
 """
-
 switchlayerbegin = """
         <layer type="switch" active="%(active)s" exclude_from_rendering="false" version="0.0" desc="%(name)s">
          <param name="z_depth">
@@ -186,7 +185,6 @@ switchlayerbegin = """
        <param name="canvas">
         <canvas>
 """
-
 switchlayerend = """
       </canvas>
     </param>
@@ -236,7 +234,6 @@ BLEND_ALPHA_BRIGHTEN=14
 BLEND_ALPHA_DARKEN=15
 BLEND_ALPHA_OVER=19
 
-
 ############################################################
 # Main functions & content
 ############################################################
@@ -273,6 +270,14 @@ def gimp2synfig_mode_converter(mode):
     return modes[mode]
 
 def python_fu_exportsynfig(img, layer, output, span, doswitchgroup, doinvisible, applymask, dozoom, dorot, dotrans):
+    if not pdb.gimp_image_is_valid(img):
+        gimp.message(_("The image file is not valid !?"))
+        return
+
+    if not img.filename:
+        gimp.message(_("The original image haven't been saved. Save the image and retry."))
+        return
+
     default_prefix = img.filename.split('.xcf')[0]
     if output:
         prefix = os.path.splitext(output)[0]
@@ -408,27 +413,25 @@ def python_fu_exportsynfig(img, layer, output, span, doswitchgroup, doinvisible,
 ############################################################
 
 register(
-    "python_fu_exportsynfig", # Function name
-    _("Export document to synfig's format"), # Blurb / description
+    "python_fu_exportsynfig",
+    _("Export document to synfig's format"),
     _("Export document to synfig's format\nBy default saves to same dir as source image"),
-    "AkhIL, d-j-a-y", # Author
-    "AkhIL", # Copyright notice
-    "2015-12-03", #Version date
-    _("Export to S_ynfig"), # Menu label
+    "AkhIL",
+    "AkhIL",
+    "2015-12-03",
+    "<Image>/File/Export/Expdduurt to S_ynfig",
     "RGB*, GRAY*",
     [
-        (PF_FILE, "output",   _("Output path (optional)"), ""),
-        (PF_FLOAT,  "span",     _("Image Span"),9.1788),
-        (PF_BOOL,   "doswitchgroup",   _("Group in a single Switch Layer (synfig >= 1.0)"),False),
-        (PF_BOOL,   "doinvisible",   _("Export invisible layers"),True),
-        (PF_BOOL,   "applymask",   _("Apply layer masks"),False),
-        (PF_BOOL,   "dozoom",   _("Add zoom layers"),False),
-        (PF_BOOL,   "dorot",   _("Add rotate layers"),False),
-        (PF_BOOL,   "dotrans",   _("Add translate layers"),False)
+        (PF_FILE, "output",   "output path (optional)", ""),
+        (PF_FLOAT,  "span",     "Image Span",9.1788),
+        (PF_BOOL,   "doswitchgroup",   "Group in a single Switch Layer (synfig >= 1.0) ",True),
+        (PF_BOOL,   "doinvisible",   "Export invisible layers",True),
+        (PF_BOOL,   "applymask",   "Apply layer masks",False),
+        (PF_BOOL,   "dozoom",   "Add zoom layers",False),
+        (PF_BOOL,   "dorot",   "Add rotate layers",False),
+        (PF_BOOL,   "dotrans",   "Add translate layers",False)
     ],
-    [], # No results
-    python_fu_exportsynfig, # Internal function name
-    menu="<Image>/File/Export",  # Register in menu
-    domain=("gimp20-python", locale_directory)
-    )
+    [],
+    python_fu_exportsynfig)
+
 main()
