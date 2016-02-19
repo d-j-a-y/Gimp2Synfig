@@ -409,27 +409,35 @@ def python_fu_exportsynfig(img, layer, output, span, doswitchgroup, doinvisible,
     siffile.close()
 
 ############################################################
+# Echo args
+############################################################
+
+def echo(*args):
+    """Print the arguments on standard output"""
+    print "echo:", args
+
+############################################################
 # Register function
 ############################################################
 
 register(
-    "python_fu_exportsynfig",
-    _("Export document to synfig's format"),
+    "python_fu_exportsynfig", # Function name
+    _("Export document to synfig's format"), # Blurb / description
     _("Export document to synfig's format\nBy default saves to same dir as source image"),
-    "AkhIL",
-    "AkhIL",
-    "2015-12-03",
-    "<Image>/File/Export/Expdduurt to S_ynfig",
+    "AkhIL", # Author
+    "AkhIL", # Copyright notice
+    "2015-12-03", # Version date
+    "<Image>/File/Export/Export to S_ynfig",
     "RGB*, GRAY*",
     [
-        (PF_FILE, "output",   "output path (optional)", ""),
-        (PF_FLOAT,  "span",     "Image Span",9.1788),
-        (PF_BOOL,   "doswitchgroup",   "Group in a single Switch Layer (synfig >= 1.0) ",True),
-        (PF_BOOL,   "doinvisible",   "Export invisible layers",True),
-        (PF_BOOL,   "applymask",   "Apply layer masks",False),
-        (PF_BOOL,   "dozoom",   "Add zoom layers",False),
-        (PF_BOOL,   "dorot",   "Add rotate layers",False),
-        (PF_BOOL,   "dotrans",   "Add translate layers",False)
+        (PF_FILE,   "output",   _("Output path (optional)"), ""),
+        (PF_FLOAT,  "span",     _("Image Span"),9.1788),
+        (PF_BOOL,   "doswitchgroup",   _("Group in a single Switch Layer (synfig >= 1.0)"), False),
+        (PF_BOOL,   "doinvisible",   _("Export invisible layers"),True),
+        (PF_BOOL,   "applymask",   _("Apply layer masks"),False),
+        (PF_BOOL,   "dozoom",   _("Add zoom layers"),False),
+        (PF_BOOL,   "dorot",   _("Add rotate layers"),False),
+        (PF_BOOL,   "dotrans",   _("Add translate layers"),False)
     ],
     [],
     python_fu_exportsynfig)
