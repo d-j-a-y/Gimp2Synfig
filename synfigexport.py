@@ -1,15 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# <Image>/File/Export/Synfig
-# exports gimp document to synfig's canvas and png images
-# if output is omited then script saves image to same dir
-# with source image
+# <Image>/File/Export
+# <Image>/File/Export As
+# Open the export dialog box, select SynfigStudio has file type (.sifz)
+# and exports gimp document to synfig's canvas and png images.
 
 ##
-#   Author: IL'dar AKHmetgaleev aka AkhIL
+#   Initial Author: IL'dar AKHmetgaleev aka AkhIL
 #   e-mail: akhilman at gmail dot com
 #   web:    http://akhilman.blogspot.com
+#
+#   Contributors :
+#       2008 - dooglus
+#       2015-2016 - d-j-a-y
 #
 #   This code is licensed under
 #   Creative Commons Attribution 3.0 Unported License
@@ -23,9 +27,34 @@
 #   2008-08-18  now works without alpha channel
 #   2015-11-25  this fork (https://github.com/d-j-a-y/Gimp2Synfig)
 #   2015-12-03  fix empty name error + add choose file dialog
+#   2016-02-19  registration into export dialog + localization
 #
 
 #TODO switch layer has option, fix accordlngly the canvas version
+#TODO gimp group layer compliant
+
+#########################################################################
+# GIMP python fu TIPS
+#######################
+# 1) On error :
+#     "Removing duplicate PDB procedure 'my-python-fu' registered
+#      by '/home/xxxxx/.gimp-2.8/plug-ins/pythonfu.py' "
+#
+# --> Check if not pythonfu.py~ file or any with same 'my-python-fu'
+#
+# 2) On error :
+#     "attempted to install <Save> procedure "my-fu-save" which
+#      does not take the standard <Save> Plug-In arguments:
+#      (INT32, IMAGE, DRAWABLE, STRING, STRING)."
+#
+# ---> Check GIMP-Erreur: save handler "file-sifz-save" does not take the standard save handler args
+# 3) On error:
+#     TypeError: export_synfig() takes exactly 11 arguments (12 given)
+# --> Check prototype handler and prototype arg declaration in register
+#####################################
+
+
+
 
 ############################################################
 # Libraries
@@ -269,7 +298,7 @@ def gimp2synfig_mode_converter(mode):
     }
     return modes[mode]
 
-def python_fu_exportsynfig(img, layer, output, span, doswitchgroup, doinvisible, applymask, dozoom, dorot, dotrans):
+def export_synfig(img, drawable, filename, raw_filename, extra, span, doswitchgroup, doinvisible, applymask, dozoom, dorot, dotrans):
     if not pdb.gimp_image_is_valid(img):
         gimp.message(_("The image file is not valid !?"))
         return
@@ -279,9 +308,9 @@ def python_fu_exportsynfig(img, layer, output, span, doswitchgroup, doinvisible,
         return
 
     default_prefix = img.filename.split('.xcf')[0]
-    if output:
-        prefix = os.path.splitext(output)[0]
-        suffix = os.path.splitext(output)[1]
+    if filename:
+        prefix = os.path.splitext(filename)[0]
+        suffix = os.path.splitext(filename)[1]
         suffix = "sifz"
     else:
         prefix = default_prefix
@@ -311,7 +340,7 @@ def python_fu_exportsynfig(img, layer, output, span, doswitchgroup, doinvisible,
     })
 
 
-    # aplying layer masks
+    # applying layer masks
     if applymask:
         img = img.duplicate()
         for l in img.layers:
@@ -341,7 +370,7 @@ def python_fu_exportsynfig(img, layer, output, span, doswitchgroup, doinvisible,
          "y":(l.height/2.0+pdb.gimp_drawable_offsets(l)[1]-img.height/2.0)*pixelsize*-1 \
         })
 
-        # maknig file names
+        # making file names
         filename = "%s.png" % ( \
             l.name.replace(" ","_").replace('#',"_",) \
         )
@@ -409,7 +438,7 @@ def python_fu_exportsynfig(img, layer, output, span, doswitchgroup, doinvisible,
     siffile.close()
 
 ############################################################
-# Echo args
+# Echo args (for debug usage)
 ############################################################
 
 def echo(*args):
@@ -420,17 +449,25 @@ def echo(*args):
 # Register function
 ############################################################
 
+def register_save_handlers():
+    gimp.register_save_handler('file-sifz-save', 'sifz', '')
+
 register(
-    "python_fu_exportsynfig", # Function name
-    _("Export document to synfig's format"), # Blurb / description
-    _("Export document to synfig's format\nBy default saves to same dir as source image"),
-    "AkhIL", # Author
-    "AkhIL", # Copyright notice
-    "2015-12-03", # Version date
-    "<Image>/File/Export/Export to S_ynfig",
-    "RGB*, GRAY*",
-    [
-        (PF_FILE,   "output",   _("Output path (optional)"), ""),
+    'file-sifz-save', # Function name
+    _("Export document to synfig's (.sfiz) format"), # Blurb / description
+    _("Export document to synfig's (.sfiz) format\nBy default saves to same dir as source image"),
+    'AkhIL', # Author
+    'AkhIL', # Copyright notice
+    '2015-12-03', # Version date
+    "Synfig Studio",
+    'RGB*, GRAY*', # Image type
+    [   # Input <save> args. Format (type, name, description, default [, extra])
+        (PF_IMAGE, "image", "Input image", None),
+        (PF_DRAWABLE, "drawable", "Input drawable", None),
+        (PF_STRING, "filename", "The name of the file", None),
+        (PF_STRING, "raw-filename", "The name of the file", None),
+        (PF_STRING, "extra", "extra args", None),
+        # Export SynfigStudio arg
         (PF_FLOAT,  "span",     _("Image Span"),9.1788),
         (PF_BOOL,   "doswitchgroup",   _("Group in a single Switch Layer (synfig >= 1.0)"), False),
         (PF_BOOL,   "doinvisible",   _("Export invisible layers"),True),
@@ -440,6 +477,8 @@ register(
         (PF_BOOL,   "dotrans",   _("Add translate layers"),False)
     ],
     [],
-    python_fu_exportsynfig)
+    export_synfig,
+    on_query = register_save_handlers,
+    menu = '<Save>')
 
 main()
