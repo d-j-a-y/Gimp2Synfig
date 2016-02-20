@@ -36,6 +36,8 @@
 #########################################################################
 # GIMP python fu TIPS
 #######################
+# Python-Fu samples : http://registry.gimp.org/node/28124
+#
 # 1) On error :
 #     "Removing duplicate PDB procedure 'my-python-fu' registered
 #      by '/home/xxxxx/.gimp-2.8/plug-ins/pythonfu.py' "
@@ -52,8 +54,6 @@
 #     TypeError: export_synfig() takes exactly 11 arguments (12 given)
 # --> Check prototype handler and prototype arg declaration in register
 #####################################
-
-
 
 
 ############################################################
@@ -269,7 +269,7 @@ BLEND_ALPHA_OVER=19
 
 def gimp2synfig_mode_converter(mode):
     """
-    converts gimp's layer compositning mode to synfig's blend method
+    converts gimp's layer compositing mode to synfig's blend method
     """
     modes = {
         NORMAL_MODE :       BLEND_COMPOSITE,
@@ -299,6 +299,7 @@ def gimp2synfig_mode_converter(mode):
     return modes[mode]
 
 def export_synfig(img, drawable, filename, raw_filename, extra, span, doswitchgroup, doinvisible, applymask, dozoom, dorot, dotrans):
+    gimp.message("WARNING : You are running a devellopment version. Stable version can be catched from https://github.com/d-j-a-y/Gimp2Synfig master branch.")
     if not pdb.gimp_image_is_valid(img):
         gimp.message(_("The image file is not valid !?"))
         return
@@ -455,10 +456,10 @@ def register_save_handlers():
 register(
     'file-sifz-save', # Function name
     _("Export document to synfig's (.sfiz) format"), # Blurb / description
-    _("Export document to synfig's (.sfiz) format\nBy default saves to same dir as source image"),
+    _("Export document to synfig's (.sfiz) format\nBy default, export invisible layers and put each Gimp layer into a Synfig Group layer"),
     'AkhIL', # Author
     'AkhIL', # Copyright notice
-    '2015-12-03', # Version date
+    '2016-02-19-Alpha', # Version date
     "Synfig Studio",
     'RGB*, GRAY*', # Image type
     [   # Input <save> args. Format (type, name, description, default [, extra])
