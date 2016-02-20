@@ -8,12 +8,10 @@ of multi-layered images to corresponding layers of the 2D animation package [Syn
 #Usage
 
 ```
-<Image>/File/Export/Synfig
+<Image>/File/Export/
 ```
-
-Exports gimp document to synfig's canvas and png images
-if output is omited then script saves image to same dir
-with source image
+Open the Export (or "Export As") dialog box, select "Synfig Studio" has file type (.sifz),
+choose a destination folder and a name, and exports gimp document to synfig's canvas and png images.
 
 See also [Gimp2Synfig](http://wiki.synfig.org/Doc:Gimp2synfig) from Synfig documentation.
 
@@ -22,6 +20,7 @@ IL'dar AKHmetgaleev aka AkhIL - [blog akhil](http://blog.akhil.ru/)
 
 ##Contribution
 * dooglus
+* [d.j.a.y](https://github.com/d-j-a-y/Gimp2Synfig)
 
 #Licence
 This program is licensed under [Creative Commons Attribution 3.0 Unported License](http://creativecommons.org/licenses/by/3.0/)
@@ -33,3 +32,5 @@ __Distribution and updating of the code is appreciated.__
 * 2008-04-26  gimp-2.2 compatibility fix by dooglus
 * 2008-08-18  now works without alpha channel
 * 2015-11-25  this fork
+* 2015-12-03  fix empty name error + add choose file dialog
+* 2016-02-19  registration into export dialog + localization mechanism
