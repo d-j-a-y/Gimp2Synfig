@@ -28,12 +28,11 @@
 #   2015-11-25  this fork (https://github.com/d-j-a-y/Gimp2Synfig)
 #   2015-12-03  fix empty name error + add choose file dialog
 #   2016-02-19  registration into export dialog + localization
-#   2016-02-22  synfig stuff to synfigfu module
+#   2016-02-22  synfig stuff to synfigfu module + fix #5 filename forbiden chars
 #
 
 #TODO switch layer has option, fix accordlngly the canvas version
 #TODO gimp group layer compliant
-#TODO remove forbiden chars from file creation
 #TODO fix color indexed files
 #TODO gif animation layer notation support
 
@@ -67,6 +66,7 @@
 from gimpfu import *
 import os
 import gzip
+import string
 
 from synfigfu import *
 
@@ -78,9 +78,17 @@ import gettext
 locale_directory = gimp.locale_directory
 gettext.install("gimp20-python", locale_directory, unicode=True)
 
+# unicodedata used by valid_file_name
+import unicodedata
+
 ############################################################
 # Main functions & content
 ############################################################
+validFilenameChars = "-_.() %s%s" % (string.ascii_letters, string.digits)
+# valid_filename original name "removeDisallowedFilenameChars" from http://stackoverflow.com/questions/295135/turn-a-string-into-a-valid-filename-in-python
+def valid_filename(filename):
+    cleanedFilename = unicodedata.normalize('NFKD', unicode(filename)).encode('ASCII', 'ignore')
+    return ''.join(c for c in cleanedFilename if c in validFilenameChars)
 
 def gimp2synfig_mode_converter(mode):
     """
@@ -180,8 +188,9 @@ def export_synfig(img, drawable, filename, raw_filename, extra, span, doswitchgr
         else:
             active = 'true'
 
+        valid_image_name = valid_filename(l.name)
         siffile.write(mysynfig.layer_inline_begin % {\
-         "name":l.name, \
+         "name":valid_image_name, \
          "amount":l.opacity*0.01, \
          "active":active, \
          "blend_method":gimp2synfig_mode_converter(l.mode), \
@@ -190,12 +199,8 @@ def export_synfig(img, drawable, filename, raw_filename, extra, span, doswitchgr
         })
 
         # making file names
-        filename = "%s.png" % ( \
-            l.name.replace(" ","_").replace('#',"_",) \
-        )
-        maskname = "%s_mask.png" % ( \
-            l.name.replace(" ","_").replace("#","_") \
-        )
+        filename = "%s.png"%valid_image_name
+        maskname = "%s_mask.png"%valid_image_name
 
         # exporting layer
         newimg = gimp.Image(l.width,l.height,img.base_type)
