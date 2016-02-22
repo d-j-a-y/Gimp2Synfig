@@ -7,6 +7,8 @@ of multi-layered images to corresponding layers of the 2D animation package [Syn
 
 #Usage
 
+* __synfigfu.py__ must be present in __PYTHONPATH__ (at least in same folder than this synfigexport.py)
+
 ```
 <Image>/File/Export/
 ```
@@ -34,3 +36,4 @@ __Distribution and updating of the code is appreciated.__
 * 2015-11-25  this fork
 * 2015-12-03  fix empty name error + add choose file dialog
 * 2016-02-19  registration into export dialog + localization mechanism
+* 2016-02-22  synfig stuff to synfigfu module
