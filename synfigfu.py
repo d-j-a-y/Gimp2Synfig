@@ -31,18 +31,19 @@ SYNFIG_BLEND_ALPHA_OVER=19
 
 
 class SynfigObject:
-	def __init__(self):
+	name = 'synfig object'
+	version = '0.0 - draft'
 	############################################################
 	# Synfig Studio layer xml templates
 	############################################################
-		self.document_begin = """
+	document_begin = """\
 <canvas version="0.3" width="%(width)i" height="%(height)i" xres="%(xres)f" yres="%(yres)f" view-box="-%(x)f %(y)f %(x)f -%(y)f" >
         <name>%(name)s</name>
     """
-		self.document_end = """\
+	document_end = """\
 </canvas>
 """
-		self.layer_inline_begin = """\
+	layer_inline_begin = """\
   <layer type="PasteCanvas" active="%(active)s" version="0.1" desc="%(name)s">
 	<param name="z_depth">
 	  <real value="0.0000000000"/>
@@ -62,12 +63,12 @@ class SynfigObject:
 	<param name="canvas">
 	  <canvas xres="10.000000" yres="10.000000">
 """
-		self.layer_inline_end = """\
+	layer_inline_end = """\
 	  </canvas>
 	</param>
   </layer>
 """
-		self.layer_image = """\
+	layer_image = """\
 		<layer type="import" active="true" version="0.1" desc="%(name)s">
 		  <param name="z_depth">
 			<real value="0.0000000000"/>
@@ -95,7 +96,7 @@ class SynfigObject:
 		  </param>
 		</layer>
 """
-		self.layer_zoom = """
+	layer_zoom = """
 		<layer type="zoom" active="true" version="0.1" desc="%(name)s">
 		  <param name="amount">
 			<real value="0.0000000000"/>
@@ -108,7 +109,7 @@ class SynfigObject:
 		  </param>
 		</layer>
 """
-		self.layer_rotate = """
+	layer_rotate = """
 		<layer type="rotate" active="true" version="0.1" desc="%(name)s">
 		  <param name="origin">
 			<vector>
@@ -121,7 +122,7 @@ class SynfigObject:
 		  </param>
 		</layer>
 """
-		self.layer_translate = """
+	layer_translate = """
 		<layer type="translate" active="true" version="0.1" desc="%(name)s">
 		  <param name="origin">
 			<vector>
@@ -131,7 +132,7 @@ class SynfigObject:
 		  </param>
 		</layer>
 """
-		self.layer_switch_begin = """
+	layer_switch_begin = """
 		<layer type="switch" active="%(active)s" exclude_from_rendering="false" version="0.0" desc="%(name)s">
 		 <param name="z_depth">
 		   <real value="0.0000000000"/>
@@ -173,7 +174,7 @@ class SynfigObject:
 	   <param name="canvas">
 		<canvas>
 """
-		self.layer_switch_end = """
+	layer_switch_end = """
 	  </canvas>
 	</param>
 	<param name="time_dilation">
@@ -193,8 +194,8 @@ class SynfigObject:
 	</param>
   </layer>
 """
-		self.name = 'synfig object'
-		self.version = '0.0 - draft'
+#	def __init__(self) :
+	pass #empty class definition
 
 # Make usable as a script as well as an importable module
 if __name__ == "__main__":
