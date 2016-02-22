@@ -28,10 +28,14 @@
 #   2015-11-25  this fork (https://github.com/d-j-a-y/Gimp2Synfig)
 #   2015-12-03  fix empty name error + add choose file dialog
 #   2016-02-19  registration into export dialog + localization
+#   2016-02-22  synfig stuff to synfigfu module
 #
 
 #TODO switch layer has option, fix accordlngly the canvas version
 #TODO gimp group layer compliant
+#TODO remove forbiden chars from file creation
+#TODO fix color indexed files
+#TODO gif animation layer notation support
 
 #########################################################################
 # GIMP python fu TIPS
@@ -64,6 +68,8 @@ from gimpfu import *
 import os
 import gzip
 
+from synfigfu import *
+
 # Localization (l10n)
 #
 # use with _("foo") around all strings, to indicate "translatable"
@@ -71,197 +77,6 @@ import gzip
 import gettext
 locale_directory = gimp.locale_directory
 gettext.install("gimp20-python", locale_directory, unicode=True)
-
-############################################################
-# Synfig Studio layer xml templates
-############################################################
-
-documentbegin = """\
-<canvas version="0.3" width="%(width)i" height="%(height)i" xres="%(xres)f" yres="%(yres)f" view-box="-%(x)f %(y)f %(x)f -%(y)f" >
-  <name>%(name)s</name>
-"""
-documentend = """\
-</canvas>
-"""
-inlinebegin = """\
-  <layer type="PasteCanvas" active="%(active)s" version="0.1" desc="%(name)s">
-    <param name="z_depth">
-      <real value="0.0000000000"/>
-    </param>
-    <param name="amount">
-      <real value="%(amount)f"/>
-    </param>
-    <param name="blend_method">
-      <integer value="%(blend_method)i"/>
-    </param>
-    <param name="origin">
-      <vector>
-        <x>%(x)f</x>
-        <y>%(y)f</y>
-      </vector>
-    </param>
-    <param name="canvas">
-      <canvas xres="10.000000" yres="10.000000">
-"""
-inlineend = """\
-      </canvas>
-    </param>
-  </layer>
-"""
-imagelayer = """\
-        <layer type="import" active="true" version="0.1" desc="%(name)s">
-          <param name="z_depth">
-            <real value="0.0000000000"/>
-          </param>
-          <param name="amount">
-            <real value="%(amount)f"/>
-          </param>
-          <param name="blend_method">
-            <integer value="%(blend_method)i"/>
-          </param>
-          <param name="tl">
-            <vector>
-              <x>-%(x)f</x>
-              <y>%(y)f</y>
-            </vector>
-          </param>
-          <param name="br">
-            <vector>
-              <x>%(x)f</x>
-              <y>-%(y)f</y>
-            </vector>
-          </param>
-          <param name="filename">
-            <string>%(file)s</string>
-          </param>
-        </layer>
-"""
-zoomlayer = """
-        <layer type="zoom" active="true" version="0.1" desc="%(name)s">
-          <param name="amount">
-            <real value="0.0000000000"/>
-          </param>
-          <param name="center">
-            <vector>
-              <x>0.0000000000</x>
-              <y>0.0000000000</y>
-            </vector>
-          </param>
-        </layer>
-"""
-rotatelayer = """
-        <layer type="rotate" active="true" version="0.1" desc="%(name)s">
-          <param name="origin">
-            <vector>
-              <x>0.0000000000</x>
-              <y>0.0000000000</y>
-            </vector>
-          </param>
-          <param name="amount">
-            <angle value="0.000000"/>
-          </param>
-        </layer>
-"""
-translatelayer = """
-        <layer type="translate" active="true" version="0.1" desc="%(name)s">
-          <param name="origin">
-            <vector>
-              <x>0.0000000000</x>
-              <y>0.0000000000</y>
-            </vector>
-          </param>
-        </layer>
-"""
-switchlayerbegin = """
-        <layer type="switch" active="%(active)s" exclude_from_rendering="false" version="0.0" desc="%(name)s">
-         <param name="z_depth">
-           <real value="0.0000000000"/>
-         </param>
-         <param name="amount">
-          <real value="%(amount)f"/>
-         </param>
-         <param name="blend_method">
-          <integer value="0" static="true"/>
-         </param>
-         <param name="origin">
-          <vector>
-            <x>0.0000000000</x>
-            <y>0.0000000000</y>
-          </vector>
-         </param>
-         <param name="transformation">
-          <composite type="transformation">
-           <offset>
-            <vector>
-              <x>0.0000000000</x>
-              <y>0.0000000000</y>
-            </vector>
-           </offset>
-           <angle>
-            <angle value="0.000000"/>
-           </angle>
-        <skew_angle>
-          <angle value="0.000000"/>
-        </skew_angle>
-        <scale>
-          <vector>
-            <x>1.0000000000</x>
-            <y>1.0000000000</y>
-          </vector>
-        </scale>
-        </composite>
-       </param>
-       <param name="canvas">
-        <canvas>
-"""
-switchlayerend = """
-      </canvas>
-    </param>
-    <param name="time_dilation">
-      <real value="1.0000000000"/>
-    </param>
-    <param name="time_offset">
-      <time value="0s"/>
-    </param>
-    <param name="children_lock">
-      <bool value="true" static="true"/>
-    </param>
-    <param name="outline_grow">
-      <real value="0.0000000000"/>
-    </param>
-    <param name="layer_name">
-      <string>%(name)s</string>
-    </param>
-  </layer>
-"""
-
-############################################################
-# Synfig Studio blend definition
-############################################################
-
-# from synfig-core/src/synfig/color.h
-BLEND_COMPOSITE=0
-BLEND_STRAIGHT=1
-BLEND_ONTO=13
-BLEND_STRAIGHT_ONTO=21
-BLEND_BEHIND=12
-BLEND_SCREEN=16
-BLEND_OVERLAY=20
-BLEND_HARD_LIGHT=17
-BLEND_MULTIPLY=6
-BLEND_DIVIDE=7
-BLEND_ADD=4
-BLEND_SUBTRACT=5
-BLEND_DIFFERENCE=18
-BLEND_BRIGHTEN=2
-BLEND_DARKEN=3
-BLEND_COLOR=8
-BLEND_HUE=9
-BLEND_SATURATION=10
-BLEND_LUMINANCE=11
-BLEND_ALPHA_BRIGHTEN=14
-BLEND_ALPHA_DARKEN=15
-BLEND_ALPHA_OVER=19
 
 ############################################################
 # Main functions & content
@@ -272,34 +87,34 @@ def gimp2synfig_mode_converter(mode):
     converts gimp's layer compositing mode to synfig's blend method
     """
     modes = {
-        NORMAL_MODE :       BLEND_COMPOSITE,
-        DISSOLVE_MODE :     BLEND_COMPOSITE,
-        BEHIND_MODE :       BLEND_BEHIND,
-        MULTIPLY_MODE :     BLEND_MULTIPLY,
-        SCREEN_MODE :       BLEND_SCREEN,
-        OVERLAY_MODE :      BLEND_OVERLAY,
-        DIFFERENCE_MODE :   BLEND_DIFFERENCE,
-        ADDITION_MODE :     BLEND_ADD,
-        SUBTRACT_MODE :     BLEND_SUBTRACT,
-        DARKEN_ONLY_MODE :  BLEND_DARKEN,
-        LIGHTEN_ONLY_MODE : BLEND_BRIGHTEN,
-        HUE_MODE :          BLEND_HUE,
-        SATURATION_MODE :   BLEND_SATURATION,
-        COLOR_MODE :        BLEND_COLOR,
-        VALUE_MODE :        BLEND_LUMINANCE,
-        DIVIDE_MODE :       BLEND_DIVIDE,
-        DODGE_MODE :        BLEND_BRIGHTEN,
-        BURN_MODE :         BLEND_MULTIPLY,
-        HARDLIGHT_MODE :    BLEND_HARD_LIGHT,
-        SOFTLIGHT_MODE :    BLEND_COMPOSITE,
-        GRAIN_EXTRACT_MODE: BLEND_COMPOSITE,
-        GRAIN_MERGE_MODE :  BLEND_COMPOSITE,
-        COLOR_ERASE_MODE :  BLEND_COMPOSITE,
+        NORMAL_MODE :       SYNFIG_BLEND_COMPOSITE,
+        DISSOLVE_MODE :     SYNFIG_BLEND_COMPOSITE,
+        BEHIND_MODE :       SYNFIG_BLEND_BEHIND,
+        MULTIPLY_MODE :     SYNFIG_BLEND_MULTIPLY,
+        SCREEN_MODE :       SYNFIG_BLEND_SCREEN,
+        OVERLAY_MODE :      SYNFIG_BLEND_OVERLAY,
+        DIFFERENCE_MODE :   SYNFIG_BLEND_DIFFERENCE,
+        ADDITION_MODE :     SYNFIG_BLEND_ADD,
+        SUBTRACT_MODE :     SYNFIG_BLEND_SUBTRACT,
+        DARKEN_ONLY_MODE :  SYNFIG_BLEND_DARKEN,
+        LIGHTEN_ONLY_MODE : SYNFIG_BLEND_BRIGHTEN,
+        HUE_MODE :          SYNFIG_BLEND_HUE,
+        SATURATION_MODE :   SYNFIG_BLEND_SATURATION,
+        COLOR_MODE :        SYNFIG_BLEND_COLOR,
+        VALUE_MODE :        SYNFIG_BLEND_LUMINANCE,
+        DIVIDE_MODE :       SYNFIG_BLEND_DIVIDE,
+        DODGE_MODE :        SYNFIG_BLEND_BRIGHTEN,
+        BURN_MODE :         SYNFIG_BLEND_MULTIPLY,
+        HARDLIGHT_MODE :    SYNFIG_BLEND_HARD_LIGHT,
+        SOFTLIGHT_MODE :    SYNFIG_BLEND_COMPOSITE,
+        GRAIN_EXTRACT_MODE: SYNFIG_BLEND_COMPOSITE,
+        GRAIN_MERGE_MODE :  SYNFIG_BLEND_COMPOSITE,
+        COLOR_ERASE_MODE :  SYNFIG_BLEND_COMPOSITE,
     }
     return modes[mode]
 
 def export_synfig(img, drawable, filename, raw_filename, extra, span, doswitchgroup, doinvisible, applymask, dozoom, dorot, dotrans):
-    gimp.message("WARNING : You are running a devellopment version. Stable version can be catched from https://github.com/d-j-a-y/Gimp2Synfig master branch.")
+    gimp.message("WARNING : You are running a development version.\nStable version can be catch from https://github.com/d-j-a-y/Gimp2Synfig master branch.")
     if not pdb.gimp_image_is_valid(img):
         gimp.message(_("The image file is not valid !?"))
         return
@@ -308,6 +123,7 @@ def export_synfig(img, drawable, filename, raw_filename, extra, span, doswitchgr
         gimp.message(_("The original image haven't been saved. Save the image and retry."))
         return
 
+    # system file name ouput generation
     default_prefix = img.filename.split('.xcf')[0]
     if filename:
         prefix = os.path.splitext(filename)[0]
@@ -327,10 +143,12 @@ def export_synfig(img, drawable, filename, raw_filename, extra, span, doswitchgr
         os.makedirs(layersprefix) # make path for layers
 
     siffile = gzip.open("%s.%s"%(os.path.join(prefix,name), suffix),"w")
+
+    mysynfig = SynfigObject()
+    # sif file generation
     pixelsize = 1/(img.width**2 + img.height**2)**0.5*span
 
-
-    siffile.write(documentbegin %{ \
+    siffile.write(mysynfig.document_begin %{ \
      "width":img.width, \
      "height":img.height, \
      "xres":pdb.gimp_image_get_resolution(img)[0]*39.37007904, \
@@ -362,7 +180,7 @@ def export_synfig(img, drawable, filename, raw_filename, extra, span, doswitchgr
         else:
             active = 'true'
 
-        siffile.write(inlinebegin % {\
+        siffile.write(mysynfig.layer_inline_begin % {\
          "name":l.name, \
          "amount":l.opacity*0.01, \
          "active":active, \
@@ -389,10 +207,10 @@ def export_synfig(img, drawable, filename, raw_filename, extra, span, doswitchgr
         pdb.gimp_file_save(newimg, newlayer, os.path.join(layersprefix,filename), filename)
         pdb.gimp_image_delete(newimg)
 
-        siffile.write(imagelayer % {\
+        siffile.write(mysynfig.layer_image % {\
          "name":filename, \
          "file":os.path.join("%s_layers"%name,filename), \
-         "blend_method":BLEND_COMPOSITE, \
+         "blend_method":SYNFIG_BLEND_COMPOSITE, \
          "amount":1.0, \
          "x":l.width/2*pixelsize, \
          "y":l.height/2*pixelsize \
@@ -412,10 +230,10 @@ def export_synfig(img, drawable, filename, raw_filename, extra, span, doswitchgr
             pdb.gimp_layer_remove_mask(newlayer, 0)
             pdb.gimp_file_save(newimg, newlayer, os.path.join(layersprefix,maskname), filename)
             pdb.gimp_image_delete(newimg)
-            siffile.write(imagelayer % {\
+            siffile.write(mysynfig.layer_image % {\
              "name":maskname, \
              "file":os.path.join("%s_layers"%name,maskname), \
-             "blend_method":BLEND_ALPHA_OVER, \
+             "blend_method":SYNFIG_BLEND_ALPHA_OVER, \
              "amount":1.0, \
              "x":l.width/2*pixelsize, \
              "y":l.height/2*pixelsize \
@@ -423,19 +241,19 @@ def export_synfig(img, drawable, filename, raw_filename, extra, span, doswitchgr
 
         # adding transform layers
         if dozoom:
-            siffile.write(zoomlayer%{"name":"%s_scale"%l.name})
+            siffile.write(mysynfig.layer_zoom%{"name":"%s_scale"%l.name})
         if dorot:
-            siffile.write(rotatelayer%{"name":"%s_rot"%l.name})
+            siffile.write(mysynfig.layer_rotate%{"name":"%s_rot"%l.name})
         if dotrans:
-            siffile.write(translatelayer%{"name":"%s_loc"%l.name})
+            siffile.write(mysynfig.layer_translate%{"name":"%s_loc"%l.name})
 
-        siffile.write(inlineend)
+        siffile.write(mysynfig.layer_inline_end)
         donelayers += 1
 
     if applymask:
         pdb.gimp_image_delete(img)
 
-    siffile.write(documentend)
+    siffile.write(mysynfig.document_end)
     siffile.close()
 
 ############################################################
