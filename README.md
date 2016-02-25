@@ -37,3 +37,4 @@ __Distribution and updating of the code is appreciated.__
 * 2015-12-03  fix empty name error + add choose file dialog
 * 2016-02-19  registration into export dialog + localization mechanism
 * 2016-02-22  synfig stuff to synfigfu module + fix issue #5 filename forbiden chars
+* 2016-02-25  switch group option
