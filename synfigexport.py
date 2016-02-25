@@ -35,6 +35,8 @@
 #TODO gimp group layer compliant
 #TODO fix color indexed files
 #TODO gif animation layer notation support
+#TODO synfig animation duration option
+#TODO zipped file sif extension not sifz
 
 #########################################################################
 # GIMP python fu TIPS
@@ -176,9 +178,15 @@ def export_synfig(img, drawable, filename, raw_filename, extra, span, doswitchgr
             if pdb.gimp_layer_get_mask(l):
                 pdb.gimp_layer_remove_mask(l, 0)
 
-    # exporting layers
     totallayers = len(img.layers)
     donelayers = 0
+
+    if doswitchgroup:
+        siffile.write(mysynfig.layer_switch_begin % {\
+                      "name":img.name \
+                      })
+
+    # exporting layers
     for l in reversed(img.layers):
         if not l.visible:
             if not doinvisible:
@@ -189,14 +197,16 @@ def export_synfig(img, drawable, filename, raw_filename, extra, span, doswitchgr
             active = 'true'
 
         valid_image_name = valid_filename(l.name)
-        siffile.write(mysynfig.layer_inline_begin % {\
-         "name":valid_image_name, \
-         "amount":l.opacity*0.01, \
-         "active":active, \
-         "blend_method":gimp2synfig_mode_converter(l.mode), \
-         "x":(l.width/2.0+pdb.gimp_drawable_offsets(l)[0]-img.width/2.0)*pixelsize, \
-         "y":(l.height/2.0+pdb.gimp_drawable_offsets(l)[1]-img.height/2.0)*pixelsize*-1 \
-        })
+
+        if not doswitchgroup:
+            siffile.write(mysynfig.layer_inline_begin % {\
+             "name":valid_image_name, \
+             "amount":l.opacity*0.01, \
+             "active":active, \
+             "blend_method":gimp2synfig_mode_converter(l.mode), \
+             "x":(l.width/2.0+pdb.gimp_drawable_offsets(l)[0]-img.width/2.0)*pixelsize, \
+             "y":(l.height/2.0+pdb.gimp_drawable_offsets(l)[1]-img.height/2.0)*pixelsize*-1 \
+            })
 
         # making file names
         filename = "%s.png"%valid_image_name
@@ -220,6 +230,9 @@ def export_synfig(img, drawable, filename, raw_filename, extra, span, doswitchgr
          "x":l.width/2*pixelsize, \
          "y":l.height/2*pixelsize \
         })
+
+        if doswitchgroup and donelayers == 0:
+            switchactive = filename
 
         # exporting layer mask
         if pdb.gimp_layer_get_mask(l):
@@ -252,11 +265,16 @@ def export_synfig(img, drawable, filename, raw_filename, extra, span, doswitchgr
         if dotrans:
             siffile.write(mysynfig.layer_translate%{"name":"%s_loc"%l.name})
 
-        siffile.write(mysynfig.layer_inline_end)
+        if not doswitchgroup:
+            siffile.write(mysynfig.layer_inline_end)
+
         donelayers += 1
 
     if applymask:
         pdb.gimp_image_delete(img)
+
+    if doswitchgroup:
+        siffile.write(mysynfig.layer_switch_end%{"name":switchactive})
 
     siffile.write(mysynfig.document_end)
     siffile.close()
