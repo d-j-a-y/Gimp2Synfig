@@ -37,9 +37,12 @@ class SynfigObject:
 	# Synfig Studio layer xml templates
 	############################################################
 	document_begin = """\
-<canvas version="0.3" width="%(width)i" height="%(height)i" xres="%(xres)f" yres="%(yres)f" view-box="-%(x)f %(y)f %(x)f -%(y)f" >
-        <name>%(name)s</name>
-    """
+<?xml version="1.0" encoding="UTF-8"?>
+<canvas version="0.3" width="%(width)i" height="%(height)i" xres="%(xres)f" yres="%(yres)f" \
+view-box="-%(x)f %(y)f %(x)f -%(y)f" >
+  <name>%(name)s</name>
+  <keyframe time="0f" active="true"/>
+"""
 	document_end = """\
 </canvas>
 """
@@ -109,7 +112,7 @@ class SynfigObject:
 		  </param>
 		</layer>
 """
-	layer_rotate = """
+	layer_rotate = """\
 		<layer type="rotate" active="true" version="0.1" desc="%(name)s">
 		  <param name="origin">
 			<vector>
@@ -132,13 +135,13 @@ class SynfigObject:
 		  </param>
 		</layer>
 """
-	layer_switch_begin = """
-		<layer type="switch" active="%(active)s" exclude_from_rendering="false" version="0.0" desc="%(name)s">
+	layer_switch_begin = """\
+		<layer type="switch" active="true" exclude_from_rendering="false" version="0.0" desc="%(name)s">
 		 <param name="z_depth">
 		   <real value="0.0000000000"/>
 		 </param>
 		 <param name="amount">
-		  <real value="%(amount)f"/>
+		  <real value="1.000000"/>
 		 </param>
 		 <param name="blend_method">
 		  <integer value="0" static="true"/>
@@ -174,7 +177,7 @@ class SynfigObject:
 	   <param name="canvas">
 		<canvas>
 """
-	layer_switch_end = """
+	layer_switch_end = """\
 	  </canvas>
 	</param>
 	<param name="time_dilation">
