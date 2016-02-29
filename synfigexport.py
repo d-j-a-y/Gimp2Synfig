@@ -124,7 +124,7 @@ def gimp2synfig_mode_converter(mode):
     return modes[mode]
 
 def export_synfig(img, drawable, filename, raw_filename, extra, span, doswitchgroup, doinvisible, applymask, dozoom, dorot, dotrans):
-    gimp.message("WARNING : You are running a development version.\nStable version can be catch from https://github.com/d-j-a-y/Gimp2Synfig master branch.")
+#    gimp.message("WARNING : You are running a development version.\nStable version can be catch from https://github.com/d-j-a-y/Gimp2Synfig master branch.")
     if not pdb.gimp_image_is_valid(img):
         gimp.message(_("The image file is not valid !?"))
         return
