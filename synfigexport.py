@@ -300,8 +300,8 @@ register(
     _("Export document to synfig's (.sfiz) format"), # Blurb / description
     _("Export document to synfig's (.sfiz) format\nBy default, export invisible layers and put each Gimp layer into a Synfig Group layer"),
     'AkhIL', # Author
-    'AkhIL', # Copyright notice
-    '2016-02-19-Alpha', # Version date
+    ("Creative Commons Attribution 3.0\n2008 - dooglus\n2015-2016 - d-j-a-y"), # Copyright notice
+    '2016-02-25', # Version date
     "Synfig Studio",
     'RGB*, GRAY*', # Image type
     [   # Input <save> args. Format (type, name, description, default [, extra])
