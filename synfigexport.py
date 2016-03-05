@@ -29,6 +29,7 @@
 #   2015-12-03  fix empty name error + add choose file dialog
 #   2016-02-19  registration into export dialog + localization
 #   2016-02-22  synfig stuff to synfigfu module + fix #5 filename forbiden chars
+#   2016-02-25  switch group option
 #
 
 #TODO switch layer has option, fix accordlngly the canvas version
