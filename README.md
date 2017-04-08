@@ -12,6 +12,13 @@ of multi-layered images to corresponding layers of the 2D animation package [Syn
 ```
 <Image>/File/Export/
 ```
+
+#For Windows Users
+
+* 1- Copy your .py files inside this proyects to GIMP path like this: C:/ProgramFiles/GIMP 2/lib/gimp/2.0/plug-ins 
+* 2- Load GIMP again in order that GIMP search for your Synfig Export Plugin
+* 3- Do your stuff and export as synfig studio format and enjoy your proyect in synfig studio format :D
+
 Open the Export (or "Export As") dialog box, select "Synfig Studio" has file type (.sifz),
 choose a destination folder and a name, and exports gimp document to synfig's canvas and png images.
 
