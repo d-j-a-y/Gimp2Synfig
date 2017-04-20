@@ -5,6 +5,13 @@ Fork of [synfigexport.py](https://sites.google.com/site/akhilman/synfigexport.py
 Plug-in for [GIMP](http://gimp.org) (__happy 20th birthday!!!__) raster editor, to allow the direct exporting 
 of multi-layered images to corresponding layers of the 2D animation package [Synfig](http://synfig.org).
 
+#Installation
+
+* 1- Copy your .py files inside this proyects to GIMP path, in general -> .../GIMP 2/lib/gimp/2.0/plug-ins 
+* 2- Load GIMP again in order that GIMP search for your Synfig Export Plugin
+* 3- Do your stuff and export as synfig studio format and enjoy your proyect in synfig studio format :D
+For more info, please refer to official plugins installation on [GIMP documentation](https://docs.gimp.org/2.8/en/gimp-scripting.html#gimp-plugins-install wiki) / [Hacking GIMP Wiki](https://wiki.gimp.org/wiki/Hacking:Plugins#Installation_of_GIMP_Plug-ins) for developer point of view.
+
 #Usage
 
 * __synfigfu.py__ must be present in __PYTHONPATH__ (at least in same folder than this synfigexport.py)
@@ -12,6 +19,7 @@ of multi-layered images to corresponding layers of the 2D animation package [Syn
 ```
 <Image>/File/Export/
 ```
+
 Open the Export (or "Export As") dialog box, select "Synfig Studio" has file type (.sifz),
 choose a destination folder and a name, and exports gimp document to synfig's canvas and png images.
 
