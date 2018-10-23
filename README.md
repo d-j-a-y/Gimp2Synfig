@@ -28,6 +28,13 @@ choose a destination folder and a name, and exports gimp document to synfig's ca
 
 See also [Gimp2Synfig](http://wiki.synfig.org/Doc:Gimp2synfig) from Synfig documentation.
 
+## Know Issue
+
+### "can't pickle Grouplayer objects!!!"
+In fact, this is a [GIMP issue](https://gitlab.gnome.org/GNOME/gimp/issues/1119).
+To work around, you must select any layer than a layer group before exporting.
+
+
 ## Author
 IL'dar AKHmetgaleev aka AkhIL - [blog akhil](http://blog.akhil.ru/)
 
