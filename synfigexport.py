@@ -155,9 +155,100 @@ def gimp2synfig_mode_converter(layer_mode, layer_name):
 
     return modes[layer_mode]
 
+#TODO if multiple group level : group[group[img1],img2], img3 > img2 is missing
+def export_layer(mysynfig, siffile, pixelsize,name, layersprefix, img, layer, doswitchgroup, doinvisible, applymask, dozoom, dorot, dotrans):
+    if pdb.gimp_item_is_group(layer):
+        gimp.message("group layer")
+        #open synfig group
+        for i in layer.layers:
+            return export_layer(mysynfig, siffile, pixelsize,name, layersprefix, img, i, doswitchgroup, doinvisible, applymask, dozoom, dorot, dotrans)
+        #close synfig group
+        gimp.message("close group layer")
+    else:
+        if not layer.visible:
+            if not doinvisible:
+                return # don't process invisible
+            else:
+                active = 'false'
+        else:
+            active = 'true'
+
+        valid_image_name = valid_filename(layer.name)
+
+        if not doswitchgroup:
+            siffile.write(mysynfig.layer_inline_begin % {\
+             "name":valid_image_name, \
+             "amount":layer.opacity*0.01, \
+             "active":active, \
+             "blend_method":gimp2synfig_mode_converter(layer.mode, layer.name), \
+             "x":(layer.width/2.0+pdb.gimp_drawable_offsets(layer)[0]-img.width/2.0)*pixelsize, \
+             "y":(layer.height/2.0+pdb.gimp_drawable_offsets(layer)[1]-img.height/2.0)*pixelsize*-1 \
+            })
+
+        # making file names
+        filename = "%s.png"%valid_image_name
+        maskname = "%s_mask.png"%valid_image_name
+
+        # exporting layer
+        newimg = gimp.Image(layer.width,layer.height,img.base_type)
+        pdb.gimp_edit_copy(layer)
+        newlayer = gimp.Layer(newimg, layer.name, layer.width, layer.height, layer.type, 1, NORMAL_MODE)
+        pdb.gimp_drawable_fill(newlayer, TRANSPARENT_FILL)
+        newimg.add_layer(newlayer)
+        pdb.gimp_floating_sel_anchor(pdb.gimp_edit_paste(newlayer, True))
+        pdb.gimp_file_save(newimg, newlayer, os.path.join(layersprefix,filename), filename)
+        pdb.gimp_image_delete(newimg)
+
+        siffile.write(mysynfig.layer_image % {\
+         "name":filename, \
+         "file":os.path.join("%s_layers"%name,filename), \
+         "blend_method":SYNFIG_BLEND_COMPOSITE, \
+         "amount":1.0, \
+         "x":layer.width/2*pixelsize, \
+         "y":layer.height/2*pixelsize \
+        })
+
+        # exporting layer mask
+        if pdb.gimp_layer_get_mask(layer):
+            newimg = gimp.Image(layer.width,layer.height,GRAY)
+            pdb.gimp_edit_copy(pdb.gimp_layer_get_mask(layer))
+            newlayer = gimp.Layer(newimg, layer.name, layer.width, layer.height, GRAYA_IMAGE)
+            pdb.gimp_drawable_fill(newlayer, TRANSPARENT_FILL)
+            newimg.add_layer(newlayer)
+            pdb.gimp_floating_sel_anchor(pdb.gimp_edit_paste(newlayer, True))
+            pdb.gimp_invert(newlayer)
+            mask = pdb.gimp_layer_create_mask(newlayer,ADD_COPY_MASK)
+            pdb.gimp_image_add_layer_mask(newimg,newlayer,mask)
+            pdb.gimp_layer_remove_mask(newlayer, 0)
+            pdb.gimp_file_save(newimg, newlayer, os.path.join(layersprefix,maskname), filename)
+            pdb.gimp_image_delete(newimg)
+            siffile.write(mysynfig.layer_image % {\
+             "name":maskname, \
+             "file":os.path.join("%s_layers"%name,maskname), \
+             "blend_method":SYNFIG_BLEND_ALPHA_OVER, \
+             "amount":1.0, \
+             "x":layer.width/2*pixelsize, \
+             "y":layer.height/2*pixelsize \
+            })
+
+        # adding transform layers
+        if dozoom:
+            siffile.write(mysynfig.layer_zoom%{"name":"%s_scale"%layer.name})
+        if dorot:
+            siffile.write(mysynfig.layer_rotate%{"name":"%s_rot"%layer.name})
+        if dotrans:
+            siffile.write(mysynfig.layer_translate%{"name":"%s_loc"%layer.name})
+
+        if not doswitchgroup:
+            siffile.write(mysynfig.layer_inline_end)
+
+
+###Supports layergroups but you must select an active layer that IS NOT a layergroup for script 
+###to run properly to work around the "can't pickle" error. 
+### https://gimplearn.net/viewtopic.php/To-Legacy-Mode-Script-Plug-in?t=1649#p19221
 
 def export_synfig(img, drawable, filename, raw_filename, extra, span, doswitchgroup, doinvisible, applymask, dozoom, dorot, dotrans):
-#    gimp.message("WARNING : You are running a development version.\nStable version can be catch from https://github.com/d-j-a-y/Gimp2Synfig master branch.")
+    gimp.message("WARNING : You are running a development version.\nStable version can be catch from https://github.com/d-j-a-y/Gimp2Synfig master branch.")
     if not pdb.gimp_image_is_valid(img):
         gimp.message(_("The image file is not valid !?"))
         return
@@ -204,108 +295,27 @@ def export_synfig(img, drawable, filename, raw_filename, extra, span, doswitchgr
 
     # applying layer masks
     if applymask:
-        img = img.duplicate()
-        for l in img.layers:
+        img2 = img.duplicate()
+        for l in img2.layers:
             if not l.visible and not doinvisible:
                 continue # don't process invisible
             if pdb.gimp_layer_get_mask(l):
                 pdb.gimp_layer_remove_mask(l, 0)
 
     totallayers = len(img.layers)
-    donelayers = 0
 
     if doswitchgroup:
         siffile.write(mysynfig.layer_switch_begin % {\
                       "name":img.name \
                       })
+        switchactive = "%s.png"%valid_filename(img.layers[0].name)
 
     # exporting layers
     for l in reversed(img.layers):
-#	if pdb.gimp_item_is_group(l): test for group layer
-        if not l.visible:
-            if not doinvisible:
-                continue # don't process invisible
-            else:
-                active = 'false'
-        else:
-            active = 'true'
-
-        valid_image_name = valid_filename(l.name)
-
-        if not doswitchgroup:
-            siffile.write(mysynfig.layer_inline_begin % {\
-             "name":valid_image_name, \
-             "amount":l.opacity*0.01, \
-             "active":active, \
-             "blend_method":gimp2synfig_mode_converter(l.mode, l.name), \
-             "x":(l.width/2.0+pdb.gimp_drawable_offsets(l)[0]-img.width/2.0)*pixelsize, \
-             "y":(l.height/2.0+pdb.gimp_drawable_offsets(l)[1]-img.height/2.0)*pixelsize*-1 \
-            })
-
-        # making file names
-        filename = "%s.png"%valid_image_name
-        maskname = "%s_mask.png"%valid_image_name
-
-        # exporting layer
-        newimg = gimp.Image(l.width,l.height,img.base_type)
-        pdb.gimp_edit_copy(l)
-        newlayer = gimp.Layer(newimg, l.name, l.width, l.height, l.type, 1, NORMAL_MODE)
-        pdb.gimp_drawable_fill(newlayer, TRANSPARENT_FILL)
-        newimg.add_layer(newlayer)
-        pdb.gimp_floating_sel_anchor(pdb.gimp_edit_paste(newlayer, True))
-        pdb.gimp_file_save(newimg, newlayer, os.path.join(layersprefix,filename), filename)
-        pdb.gimp_image_delete(newimg)
-
-        siffile.write(mysynfig.layer_image % {\
-         "name":filename, \
-         "file":os.path.join("%s_layers"%name,filename), \
-         "blend_method":SYNFIG_BLEND_COMPOSITE, \
-         "amount":1.0, \
-         "x":l.width/2*pixelsize, \
-         "y":l.height/2*pixelsize \
-        })
-
-        if doswitchgroup and donelayers == 0:
-            switchactive = filename
-
-        # exporting layer mask
-        if pdb.gimp_layer_get_mask(l):
-            newimg = gimp.Image(l.width,l.height,GRAY)
-            pdb.gimp_edit_copy(pdb.gimp_layer_get_mask(l))
-            newlayer = gimp.Layer(newimg, l.name, l.width, l.height, GRAYA_IMAGE)
-            pdb.gimp_drawable_fill(newlayer, TRANSPARENT_FILL)
-            newimg.add_layer(newlayer)
-            pdb.gimp_floating_sel_anchor(pdb.gimp_edit_paste(newlayer, True))
-            pdb.gimp_invert(newlayer)
-            mask = pdb.gimp_layer_create_mask(newlayer,ADD_COPY_MASK)
-            pdb.gimp_image_add_layer_mask(newimg,newlayer,mask)
-            pdb.gimp_layer_remove_mask(newlayer, 0)
-            pdb.gimp_file_save(newimg, newlayer, os.path.join(layersprefix,maskname), filename)
-            pdb.gimp_image_delete(newimg)
-            siffile.write(mysynfig.layer_image % {\
-             "name":maskname, \
-             "file":os.path.join("%s_layers"%name,maskname), \
-             "blend_method":SYNFIG_BLEND_ALPHA_OVER, \
-             "amount":1.0, \
-             "x":l.width/2*pixelsize, \
-             "y":l.height/2*pixelsize \
-            })
-
-        # adding transform layers
-        if dozoom:
-            siffile.write(mysynfig.layer_zoom%{"name":"%s_scale"%l.name})
-        if dorot:
-            siffile.write(mysynfig.layer_rotate%{"name":"%s_rot"%l.name})
-        if dotrans:
-            siffile.write(mysynfig.layer_translate%{"name":"%s_loc"%l.name})
-
-        if not doswitchgroup:
-            siffile.write(mysynfig.layer_inline_end)
-
-        donelayers += 1
+        export_layer(mysynfig, siffile, pixelsize, name, layersprefix, img, l, doswitchgroup, doinvisible, applymask, dozoom, dorot, dotrans)
 
     if applymask:
-        pdb.gimp_image_delete(img)
+        pdb.gimp_image_delete(img2)
 
     if doswitchgroup:
         siffile.write(mysynfig.layer_switch_end%{"name":switchactive})
