@@ -2,20 +2,23 @@
 
 Fork of [synfigexport.py](https://sites.google.com/site/akhilman/synfigexport.py)
 
-Plug-in for [GIMP](http://gimp.org) (__happy 20th birthday!!!__) raster editor, to allow the direct exporting 
-of multi-layered images to corresponding layers of the 2D animation package [Synfig](http://synfig.org).
+[GIMP](https://www.gimp.org) to [Synfig](https://www.synfig.org) file export plugin.
+
+Export a GIMP multi-layered image to a corresponding Synfig, an awesome 2D animation software, project.
 
 ## Installation
 
-* 1- Copy your .py files inside this proyects to GIMP path, in general -> .../GIMP 2/lib/gimp/2.0/plug-ins 
-* 2- Load GIMP again in order that GIMP search for your Synfig Export Plugin
-* 3- Do your stuff and export as synfig studio format and enjoy your proyect in synfig studio format :D
-For more info, please refer to official plugins installation on [GIMP documentation](https://docs.gimp.org/2.8/en/gimp-scripting.html#gimp-plugins-install wiki) / [Hacking GIMP Wiki](https://wiki.gimp.org/wiki/Hacking:Plugins#Installation_of_GIMP_Plug-ins) for developer point of view.
+* 0- Locate the GIMP __plugins directory__ from \<Edit\> / Preferences: Folders → Plugins.
+* 1- Extract/Copy/Move/... __synfigexport.py__ and __synfigfu.py__ files to the GIMP plugins directory.
+* 2- (re)Load GIMP to __refresh__ the Plugins system
+* 3- Do your stuff and export as synfig studio format and __enjoy__ your project in synfig studio format :D
+
+For up to date and complete infos, please refer to the official Gimp's plugins installation (this plugin is part of the "Python-Fu" family) : [GIMP 2.10 - scripting -](https://docs.gimp.org/2.10/en/gimp-scripting.html) or [GIMP 2.8 - scripting -](https://docs.gimp.org/2.8/en/gimp-scripting.html) or ...
+
+NOTA : __synfigfu.py__ must be present in __PYTHONPATH__ (or at least in same folder than synfigexport.py)
+
 
 ## Usage
-
-* __synfigfu.py__ must be present in __PYTHONPATH__ (at least in same folder than this synfigexport.py)
-
 ```
 <Image>/File/Export/
 ```
@@ -34,7 +37,7 @@ IL'dar AKHmetgaleev aka AkhIL - [blog akhil](http://blog.akhil.ru/)
 
 
 ## Licence
-This program is licensed under [Creative Commons Attribution 3.0 Unported License](http://creativecommons.org/licenses/by/3.0/)
+This program is licensed under [Creative Commons Attribution 3.0 Unported License](https://creativecommons.org/licenses/by/3.0/)
 
 __Distribution and updating of the code is appreciated.__
 
@@ -47,3 +50,4 @@ __Distribution and updating of the code is appreciated.__
 * 2016-02-19  registration into export dialog + localization mechanism
 * 2016-02-22  synfig stuff to synfigfu module + fix issue #5 filename forbiden chars
 * 2016-02-25  switch group option
+* 2018-10-23  GIMP 2.10 compliant!

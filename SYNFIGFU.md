@@ -1,6 +1,6 @@
 # SynfigFu - Quickstart Introduction
 ## Preface
-This API is not stable but some areas are still being added and improved.
+This API is not stable some areas must being added and improved.
 
 The Synfig/Python API can do the following:
 * SynfigObject creation
@@ -8,7 +8,7 @@ The Synfig/Python API can do the following:
   * member layers string xml templates
 * is usable has a script
 
-The Blender/Python API can’t (yet)...
+The Synfig/Python API can’t (yet)...
 * every thing else
 
 ##Before Starting

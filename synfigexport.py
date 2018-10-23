@@ -13,7 +13,7 @@
 #
 #   Contributors :
 #       2008 - dooglus
-#       2015-2016 - d-j-a-y
+#       2015-2018 - d-j-a-y
 #
 #   This code is licensed under
 #   Creative Commons Attribution 3.0 Unported License
@@ -30,6 +30,7 @@
 #   2016-02-19  registration into export dialog + localization
 #   2016-02-22  synfig stuff to synfigfu module + fix #5 filename forbiden chars
 #   2016-02-25  switch group option
+#   2018-10-23  GIMP 2.10 compliant!
 #
 
 #TODO switch layer has option, fix accordlngly the canvas version
@@ -93,36 +94,67 @@ def valid_filename(filename):
     cleanedFilename = unicodedata.normalize('NFKD', unicode(filename)).encode('ASCII', 'ignore')
     return ''.join(c for c in cleanedFilename if c in validFilenameChars)
 
-def gimp2synfig_mode_converter(mode):
+def gimp2synfig_mode_converter(layer_mode, layer_name):
     """
     converts gimp's layer compositing mode to synfig's blend method
     """
-    modes = {
-        NORMAL_MODE :       SYNFIG_BLEND_COMPOSITE,
-        DISSOLVE_MODE :     SYNFIG_BLEND_COMPOSITE,
-        BEHIND_MODE :       SYNFIG_BLEND_BEHIND,
-        MULTIPLY_MODE :     SYNFIG_BLEND_MULTIPLY,
-        SCREEN_MODE :       SYNFIG_BLEND_SCREEN,
-        OVERLAY_MODE :      SYNFIG_BLEND_OVERLAY,
-        DIFFERENCE_MODE :   SYNFIG_BLEND_DIFFERENCE,
-        ADDITION_MODE :     SYNFIG_BLEND_ADD,
-        SUBTRACT_MODE :     SYNFIG_BLEND_SUBTRACT,
-        DARKEN_ONLY_MODE :  SYNFIG_BLEND_DARKEN,
-        LIGHTEN_ONLY_MODE : SYNFIG_BLEND_BRIGHTEN,
-        HUE_MODE :          SYNFIG_BLEND_HUE,
-        SATURATION_MODE :   SYNFIG_BLEND_SATURATION,
-        COLOR_MODE :        SYNFIG_BLEND_COLOR,
-        VALUE_MODE :        SYNFIG_BLEND_LUMINANCE,
-        DIVIDE_MODE :       SYNFIG_BLEND_DIVIDE,
-        DODGE_MODE :        SYNFIG_BLEND_BRIGHTEN,
-        BURN_MODE :         SYNFIG_BLEND_MULTIPLY,
-        HARDLIGHT_MODE :    SYNFIG_BLEND_HARD_LIGHT,
-        SOFTLIGHT_MODE :    SYNFIG_BLEND_COMPOSITE,
-        GRAIN_EXTRACT_MODE: SYNFIG_BLEND_COMPOSITE,
-        GRAIN_MERGE_MODE :  SYNFIG_BLEND_COMPOSITE,
-        COLOR_ERASE_MODE :  SYNFIG_BLEND_COMPOSITE,
-    }
-    return modes[mode]
+    modes = {}
+    if gimp.version >= (2, 10, 0):
+        modes = {
+            LAYER_MODE_NORMAL:      SYNFIG_BLEND_COMPOSITE,
+            LAYER_MODE_BEHIND :     SYNFIG_BLEND_BEHIND,
+            LAYER_MODE_MULTIPLY :   SYNFIG_BLEND_MULTIPLY,
+            LAYER_MODE_SCREEN :     SYNFIG_BLEND_SCREEN,
+            LAYER_MODE_OVERLAY :    SYNFIG_BLEND_OVERLAY,
+            LAYER_MODE_DIFFERENCE : SYNFIG_BLEND_DIFFERENCE,
+            LAYER_MODE_ADDITION :   SYNFIG_BLEND_ADD,
+            LAYER_MODE_SUBTRACT :   SYNFIG_BLEND_SUBTRACT,
+            LAYER_MODE_DARKEN_ONLY :SYNFIG_BLEND_DARKEN,
+            LAYER_MODE_LIGHTEN_ONLY:SYNFIG_BLEND_BRIGHTEN,
+            LAYER_MODE_LCH_HUE :        SYNFIG_BLEND_HUE,
+            LAYER_MODE_HSV_HUE :        SYNFIG_BLEND_HUE,
+            LAYER_MODE_HSV_SATURATION : SYNFIG_BLEND_SATURATION,
+            LAYER_MODE_LCH_COLOR :      SYNFIG_BLEND_COLOR,
+            LAYER_MODE_HSL_COLOR :      SYNFIG_BLEND_COLOR,
+            LAYER_MODE_HSV_VALUE :      SYNFIG_BLEND_LUMINANCE,
+            LAYER_MODE_DIVIDE :     SYNFIG_BLEND_DIVIDE,
+            LAYER_MODE_DODGE :      SYNFIG_BLEND_BRIGHTEN,
+            LAYER_MODE_BURN :       SYNFIG_BLEND_MULTIPLY,
+            LAYER_MODE_HARDLIGHT :  SYNFIG_BLEND_HARD_LIGHT,
+        }
+    else:
+        modes = {
+            NORMAL_MODE :           SYNFIG_BLEND_COMPOSITE,
+    #        DISSOLVE_MODE :     SYNFIG_BLEND_COMPOSITE,
+            BEHIND_MODE :           SYNFIG_BLEND_BEHIND,
+            MULTIPLY_MODE :         SYNFIG_BLEND_MULTIPLY,
+            SCREEN_MODE :           SYNFIG_BLEND_SCREEN,
+            OVERLAY_MODE :          SYNFIG_BLEND_OVERLAY,
+            DIFFERENCE_MODE :       SYNFIG_BLEND_DIFFERENCE,
+            ADDITION_MODE :         SYNFIG_BLEND_ADD,
+            SUBTRACT_MODE :         SYNFIG_BLEND_SUBTRACT,
+            DARKEN_ONLY_MODE :      SYNFIG_BLEND_DARKEN,
+            LIGHTEN_ONLY_MODE :     SYNFIG_BLEND_BRIGHTEN,
+            HUE_MODE :              SYNFIG_BLEND_HUE,
+            SATURATION_MODE :       SYNFIG_BLEND_SATURATION,
+            COLOR_MODE :            SYNFIG_BLEND_COLOR,
+            VALUE_MODE :            SYNFIG_BLEND_LUMINANCE,
+            DIVIDE_MODE :           SYNFIG_BLEND_DIVIDE,
+            DODGE_MODE :            SYNFIG_BLEND_BRIGHTEN,
+            BURN_MODE :             SYNFIG_BLEND_MULTIPLY,
+            HARDLIGHT_MODE :        SYNFIG_BLEND_HARD_LIGHT,
+    #        SOFTLIGHT_MODE :    SYNFIG_BLEND_COMPOSITE,
+    #        GRAIN_EXTRACT_MODE: SYNFIG_BLEND_COMPOSITE,
+    #        GRAIN_MERGE_MODE :  SYNFIG_BLEND_COMPOSITE,
+    #        COLOR_ERASE_MODE :  SYNFIG_BLEND_COMPOSITE,
+        }
+
+    if not layer_mode in modes:
+        gimp.message(_("Can't find adhoc layer mode for \"" + layer_name + "\", will use synfig composite (aka normal)"))
+        return SYNFIG_BLEND_COMPOSITE
+
+    return modes[layer_mode]
+
 
 def export_synfig(img, drawable, filename, raw_filename, extra, span, doswitchgroup, doinvisible, applymask, dozoom, dorot, dotrans):
 #    gimp.message("WARNING : You are running a development version.\nStable version can be catch from https://github.com/d-j-a-y/Gimp2Synfig master branch.")
@@ -189,6 +221,7 @@ def export_synfig(img, drawable, filename, raw_filename, extra, span, doswitchgr
 
     # exporting layers
     for l in reversed(img.layers):
+#	if pdb.gimp_item_is_group(l): test for group layer
         if not l.visible:
             if not doinvisible:
                 continue # don't process invisible
@@ -204,7 +237,7 @@ def export_synfig(img, drawable, filename, raw_filename, extra, span, doswitchgr
              "name":valid_image_name, \
              "amount":l.opacity*0.01, \
              "active":active, \
-             "blend_method":gimp2synfig_mode_converter(l.mode), \
+             "blend_method":gimp2synfig_mode_converter(l.mode, l.name), \
              "x":(l.width/2.0+pdb.gimp_drawable_offsets(l)[0]-img.width/2.0)*pixelsize, \
              "y":(l.height/2.0+pdb.gimp_drawable_offsets(l)[1]-img.height/2.0)*pixelsize*-1 \
             })
@@ -300,9 +333,9 @@ register(
     _("Export document to synfig's (.sfiz) format"), # Blurb / description
     _("Export document to synfig's (.sfiz) format\nBy default, export invisible layers and put each Gimp layer into a Synfig Group layer"),
     'AkhIL', # Author
-    ("Creative Commons Attribution 3.0\n2008 - dooglus\n2015-2016 - d-j-a-y"), # Copyright notice
-    '2016-02-25', # Version date
-    "Synfig Studio",
+    ("Creative Commons Attribution 3.0\n2008 - dooglus\n2015-2018 - d-j-a-y"), # Copyright notice
+    '2018-10-23', # Version date
+    "Synfig Studio Export",
     'RGB*, GRAY*', # Image type
     [   # Input <save> args. Format (type, name, description, default [, extra])
         (PF_IMAGE, "image", "Input image", None),
