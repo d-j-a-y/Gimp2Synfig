@@ -1,5 +1,7 @@
 # synfigexport.py
 
+![Gimp2Synfig screenshot](Gimp2Synfig.png)
+
 Fork of [synfigexport.py](https://sites.google.com/site/akhilman/synfigexport.py)
 
 [GIMP](https://www.gimp.org) to [Synfig](https://www.synfig.org) file export plugin.
