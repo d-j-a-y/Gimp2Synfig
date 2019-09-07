@@ -11,7 +11,7 @@ Export a GIMP multi-layered image to a corresponding Synfig, an awesome 2D anima
 ## Installation
 
 * 0- Locate the GIMP __plugins directory__ from \<Edit\> / Preferences: Folders → Plugins.
-* 1- Extract/Copy/Move/... __synfigexport.py__ and __synfigfu.py__ files to the GIMP plugins directory.
+* 1- Extract/Copy/Move/... __synfigexport.py__ and __synfigfu.py__ files to the GIMP plugins directory (Hey GNux users, d'nt forget to grant execution permission).
 * 2- (re)Load GIMP to __refresh__ the Plugins system
 * 3- Do your stuff and export as synfig studio format and __enjoy__ your project in synfig studio format :D
 
