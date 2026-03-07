@@ -1,5 +1,5 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
+#coding: utf-8
 
 # <Image>/File/Export
 # <Image>/File/Export As
@@ -13,6 +13,7 @@
 #
 #   Contributors :
 #       2008 - dooglus
+#FIXME
 #       2015-2018 - d-j-a-y
 #
 #   This code is licensed under
@@ -31,7 +32,7 @@
 #   2016-02-22  synfig stuff to synfigfu module + fix #5 filename forbiden chars
 #   2016-02-25  switch group option
 #   2018-10-23  GIMP 2.10 compliant!
-#
+#FIXME
 
 #TODO switch layer has option, fix accordlngly the canvas version
 #TODO gimp group layer compliant
@@ -47,7 +48,7 @@
 #
 # 1) On error :
 #     "Removing duplicate PDB procedure 'my-python-fu' registered
-#      by '/home/xxxxx/.gimp-2.8/plug-ins/pythonfu.py' "
+#      by '/home/xxxxx/.gimp-2.8/plug-ins/pythonfu.py' " FIXME
 #
 # --> Check if not pythonfu.py~ file or any with same 'my-python-fu'
 #
@@ -66,295 +67,117 @@
 ############################################################
 # Libraries
 ############################################################
+import sys
 
-from gimpfu import *
+import gi
+gi.require_version('Gimp', '3.0')
+from gi.repository import Gimp
+gi.require_version('GimpUi', '3.0')
+from gi.repository import GimpUi
+from gi.repository import GObject
+from gi.repository import GLib
+
+#from gimpfu import *
+
 import os
 import gzip
 import string
 
-from synfigfu import *
+#from synfigfu import *
 
 # Localization (l10n)
 #
 # use with _("foo") around all strings, to indicate "translatable"
-
-import gettext
-locale_directory = gimp.locale_directory
-gettext.install("gimp20-python", locale_directory, unicode=True)
+# ~ import gettext
+# ~ locale_directory = gimp.locale_directory
+# ~ gettext.install("gimp20-python", locale_directory, unicode=True)
 
 # unicodedata used by valid_file_name
-import unicodedata
+#import unicodedata
+def export_synfig(procedure, run_mode, image, file, options, metadata, config, data):
+    # ~ def write_file_str(zfile, fname, data):
+        # ~ # work around a permission bug in the zipfile library:
+        # ~ # http://bugs.python.org/issue3394
+        # ~ zi = zipfile.ZipInfo(fname)
+        # ~ zi.external_attr = int("100644", 8) << 16
+        # ~ zfile.writestr(zi, data)
+
+    Gimp.progress_init("Exporting SynfigStudio image")
+    Gimp.message("Hello world!")
+
+    # do what you want to do, then, in case of success, return:
+    # ~ return procedure.new_return_values(Gimp.PDBStatusType.SUCCESS, GLib.Error())
+    Gimp.progress_end()
+
+    return Gimp.ValueArray.new_from_values([
+        GObject.Value(Gimp.PDBStatusType, Gimp.PDBStatusType.SUCCESS)
+    ])
+
+
+class SynfigExport (Gimp.PlugIn):
+    ## GimpPlugIn virtual methods ##
+    def do_set_i18n (self, name): #https://discourse.gnome.org/t/gimp-3-how-to-set-up-localisation-for-my-plug-in/27010
+        return False
+        
+    def do_query_procedures(self):
+        return [ 'file-synfig-export' ]
+
+    def do_create_procedure(self, name):
+        procedure = None
+        if name == 'file-synfig-export':
+            procedure = Gimp.ExportProcedure.new(self, name,
+                                                 Gimp.PDBProcType.PLUGIN,
+                                                 False, export_synfig, None)
+
+            procedure.set_image_types("RGB*,GRAY*")
+
+            procedure.set_menu_label("Synfig Studio Export")
+            procedure.set_extensions ("sifz");
+
+            # In the new API, use File/[Save] for the Save section of the File menu
+            # https://gitlab.gnome.org/GNOME/gimp/-/blob/master/NEWS?ref_type=heads#L85
+            # ~ procedure.add_menu_path('<Image>/File/[Save]')
+
+            procedure.set_documentation("Export document to synfig's (.sfiz) format",
+                                        "Export document to synfig's (.sfiz) format\nBy default, export invisible layers and put each Gimp layer into a Synfig Group layer",
+                                        name)
+            procedure.set_attribution("AkhIL", "Creative Commons Attribution 3.0\n2008 - dooglus\n2015-2026 - d-j-a-y", "2026-02-XX")
+
+        return procedure
+
+# ~ def register_save_handlers():
+    # ~ gimp.register_save_handler('file-sifz-save', 'sifz', '')
+
+# ~ register(
+    # ~ 'file-sifz-save', # Function name
+    # ~ _("Export document to synfig's (.sfiz) format"), # Blurb / description
+    # ~ _("Export document to synfig's (.sfiz) format\nBy default, export invisible layers and put each Gimp layer into a Synfig Group layer"),
+    # ~ 'AkhIL', # Author
+    # ~ ("Creative Commons Attribution 3.0\n2008 - dooglus\n2015-2018 - d-j-a-y"), # Copyright notice
+    # ~ '2018-10-23', # Version date
+    # ~ "Synfig Studio Export",
+    # ~ 'RGB*, GRAY*', # Image type
+    # ~ [   # Input <save> args. Format (type, name, description, default [, extra])
+        # ~ (PF_IMAGE, "image", "Input image", None),
+        # ~ (PF_DRAWABLE, "drawable", "Input drawable", None),
+        # ~ (PF_STRING, "filename", "The name of the file", None),
+        # ~ (PF_STRING, "raw-filename", "The name of the file", None),
+        # ~ (PF_STRING, "extra", "extra args", None),
+        # ~ # Export SynfigStudio arg
+        # ~ (PF_FLOAT,  "span",     _("Image Span"),9.1788),
+        # ~ (PF_BOOL,   "doswitchgroup",   _("Group in a single Switch Layer (synfig >= 1.0)"), False),
+        # ~ (PF_BOOL,   "doinvisible",   _("Export invisible layers"),True),
+        # ~ (PF_BOOL,   "applymask",   _("Apply layer masks"),False),
+        # ~ (PF_BOOL,   "dozoom",   _("Add zoom layers"),False),
+        # ~ (PF_BOOL,   "dorot",   _("Add rotate layers"),False),
+        # ~ (PF_BOOL,   "dotrans",   _("Add translate layers"),False)
+    # ~ ],
+    # ~ [],
+    # ~ export_synfig,
+    # ~ on_query = register_save_handlers,
+    # ~ menu = '<Save>')
 
 ############################################################
-# Main functions & content
+# Entry point
 ############################################################
-validFilenameChars = "-_.() %s%s" % (string.ascii_letters, string.digits)
-# valid_filename original name "removeDisallowedFilenameChars" from http://stackoverflow.com/questions/295135/turn-a-string-into-a-valid-filename-in-python
-def valid_filename(filename):
-    cleanedFilename = unicodedata.normalize('NFKD', unicode(filename)).encode('ASCII', 'ignore')
-    return ''.join(c for c in cleanedFilename if c in validFilenameChars)
-
-def gimp2synfig_mode_converter(layer_mode, layer_name):
-    """
-    converts gimp's layer compositing mode to synfig's blend method
-    """
-    modes = {}
-    if gimp.version >= (2, 10, 0):
-        modes = {
-            LAYER_MODE_NORMAL:      SYNFIG_BLEND_COMPOSITE,
-            LAYER_MODE_BEHIND :     SYNFIG_BLEND_BEHIND,
-            LAYER_MODE_MULTIPLY :   SYNFIG_BLEND_MULTIPLY,
-            LAYER_MODE_SCREEN :     SYNFIG_BLEND_SCREEN,
-            LAYER_MODE_OVERLAY :    SYNFIG_BLEND_OVERLAY,
-            LAYER_MODE_DIFFERENCE : SYNFIG_BLEND_DIFFERENCE,
-            LAYER_MODE_ADDITION :   SYNFIG_BLEND_ADD,
-            LAYER_MODE_SUBTRACT :   SYNFIG_BLEND_SUBTRACT,
-            LAYER_MODE_DARKEN_ONLY :SYNFIG_BLEND_DARKEN,
-            LAYER_MODE_LIGHTEN_ONLY:SYNFIG_BLEND_BRIGHTEN,
-            LAYER_MODE_LCH_HUE :        SYNFIG_BLEND_HUE,
-            LAYER_MODE_HSV_HUE :        SYNFIG_BLEND_HUE,
-            LAYER_MODE_HSV_SATURATION : SYNFIG_BLEND_SATURATION,
-            LAYER_MODE_LCH_COLOR :      SYNFIG_BLEND_COLOR,
-            LAYER_MODE_HSL_COLOR :      SYNFIG_BLEND_COLOR,
-            LAYER_MODE_HSV_VALUE :      SYNFIG_BLEND_LUMINANCE,
-            LAYER_MODE_DIVIDE :     SYNFIG_BLEND_DIVIDE,
-            LAYER_MODE_DODGE :      SYNFIG_BLEND_BRIGHTEN,
-            LAYER_MODE_BURN :       SYNFIG_BLEND_MULTIPLY,
-            LAYER_MODE_HARDLIGHT :  SYNFIG_BLEND_HARD_LIGHT,
-        }
-    else:
-        modes = {
-            NORMAL_MODE :           SYNFIG_BLEND_COMPOSITE,
-    #        DISSOLVE_MODE :     SYNFIG_BLEND_COMPOSITE,
-            BEHIND_MODE :           SYNFIG_BLEND_BEHIND,
-            MULTIPLY_MODE :         SYNFIG_BLEND_MULTIPLY,
-            SCREEN_MODE :           SYNFIG_BLEND_SCREEN,
-            OVERLAY_MODE :          SYNFIG_BLEND_OVERLAY,
-            DIFFERENCE_MODE :       SYNFIG_BLEND_DIFFERENCE,
-            ADDITION_MODE :         SYNFIG_BLEND_ADD,
-            SUBTRACT_MODE :         SYNFIG_BLEND_SUBTRACT,
-            DARKEN_ONLY_MODE :      SYNFIG_BLEND_DARKEN,
-            LIGHTEN_ONLY_MODE :     SYNFIG_BLEND_BRIGHTEN,
-            HUE_MODE :              SYNFIG_BLEND_HUE,
-            SATURATION_MODE :       SYNFIG_BLEND_SATURATION,
-            COLOR_MODE :            SYNFIG_BLEND_COLOR,
-            VALUE_MODE :            SYNFIG_BLEND_LUMINANCE,
-            DIVIDE_MODE :           SYNFIG_BLEND_DIVIDE,
-            DODGE_MODE :            SYNFIG_BLEND_BRIGHTEN,
-            BURN_MODE :             SYNFIG_BLEND_MULTIPLY,
-            HARDLIGHT_MODE :        SYNFIG_BLEND_HARD_LIGHT,
-    #        SOFTLIGHT_MODE :    SYNFIG_BLEND_COMPOSITE,
-    #        GRAIN_EXTRACT_MODE: SYNFIG_BLEND_COMPOSITE,
-    #        GRAIN_MERGE_MODE :  SYNFIG_BLEND_COMPOSITE,
-    #        COLOR_ERASE_MODE :  SYNFIG_BLEND_COMPOSITE,
-        }
-
-    if not layer_mode in modes:
-        gimp.message(_("Can't find adhoc layer mode for \"" + layer_name + "\", will use synfig composite (aka normal)"))
-        return SYNFIG_BLEND_COMPOSITE
-
-    return modes[layer_mode]
-
-
-def export_synfig(img, drawable, filename, raw_filename, extra, span, doswitchgroup, doinvisible, applymask, dozoom, dorot, dotrans):
-#    gimp.message("WARNING : You are running a development version.\nStable version can be catch from https://github.com/d-j-a-y/Gimp2Synfig master branch.")
-    if not pdb.gimp_image_is_valid(img):
-        gimp.message(_("The image file is not valid !?"))
-        return
-
-    if not img.filename:
-        gimp.message(_("The original image haven't been saved. Save the image and retry."))
-        return
-
-    # system file name ouput generation
-    default_prefix = img.filename.split('.xcf')[0]
-    if filename:
-        prefix = os.path.splitext(filename)[0]
-        suffix = os.path.splitext(filename)[1]
-        suffix = "sifz"
-    else:
-        prefix = default_prefix
-        suffix = "sifz"
-    name = os.path.basename(prefix)
-    if not len(name):
-        name = os.path.basename(default_prefix)
-
-    prefix = os.path.dirname(prefix)
-    layersprefix = os.path.join(prefix,"%s_layers"%name)
-
-    if not os.path.isdir(layersprefix):
-        os.makedirs(layersprefix) # make path for layers
-
-    siffile = gzip.open("%s.%s"%(os.path.join(prefix,name), suffix),"w")
-
-    mysynfig = SynfigObject()
-    # sif file generation
-    pixelsize = 1/(img.width**2 + img.height**2)**0.5*span
-
-    siffile.write(mysynfig.document_begin %{ \
-     "width":img.width, \
-     "height":img.height, \
-     "xres":pdb.gimp_image_get_resolution(img)[0]*39.37007904, \
-     "yres":pdb.gimp_image_get_resolution(img)[1]*39.37007904, \
-     "x":img.width*pixelsize/2, \
-     "y":img.height*pixelsize/2, \
-     "name":img.name \
-    })
-
-
-    # applying layer masks
-    if applymask:
-        img = img.duplicate()
-        for l in img.layers:
-            if not l.visible and not doinvisible:
-                continue # don't process invisible
-            if pdb.gimp_layer_get_mask(l):
-                pdb.gimp_layer_remove_mask(l, 0)
-
-    totallayers = len(img.layers)
-    donelayers = 0
-
-    if doswitchgroup:
-        siffile.write(mysynfig.layer_switch_begin % {\
-                      "name":img.name \
-                      })
-
-    # exporting layers
-    for l in reversed(img.layers):
-#	if pdb.gimp_item_is_group(l): test for group layer
-        if not l.visible:
-            if not doinvisible:
-                continue # don't process invisible
-            else:
-                active = 'false'
-        else:
-            active = 'true'
-
-        valid_image_name = valid_filename(l.name)
-
-        if not doswitchgroup:
-            siffile.write(mysynfig.layer_inline_begin % {\
-             "name":valid_image_name, \
-             "amount":l.opacity*0.01, \
-             "active":active, \
-             "blend_method":gimp2synfig_mode_converter(l.mode, l.name), \
-             "x":(l.width/2.0+pdb.gimp_drawable_offsets(l)[0]-img.width/2.0)*pixelsize, \
-             "y":(l.height/2.0+pdb.gimp_drawable_offsets(l)[1]-img.height/2.0)*pixelsize*-1 \
-            })
-
-        # making file names
-        filename = "%s.png"%valid_image_name
-        maskname = "%s_mask.png"%valid_image_name
-
-        # exporting layer
-        newimg = gimp.Image(l.width,l.height,img.base_type)
-        pdb.gimp_edit_copy(l)
-        newlayer = gimp.Layer(newimg, l.name, l.width, l.height, l.type, 1, NORMAL_MODE)
-        pdb.gimp_drawable_fill(newlayer, TRANSPARENT_FILL)
-        newimg.add_layer(newlayer)
-        pdb.gimp_floating_sel_anchor(pdb.gimp_edit_paste(newlayer, True))
-        pdb.gimp_file_save(newimg, newlayer, os.path.join(layersprefix,filename), filename)
-        pdb.gimp_image_delete(newimg)
-
-        siffile.write(mysynfig.layer_image % {\
-         "name":filename, \
-         "file":os.path.join("%s_layers"%name,filename), \
-         "blend_method":SYNFIG_BLEND_COMPOSITE, \
-         "amount":1.0, \
-         "x":l.width/2*pixelsize, \
-         "y":l.height/2*pixelsize \
-        })
-
-        if doswitchgroup and donelayers == 0:
-            switchactive = filename
-
-        # exporting layer mask
-        if pdb.gimp_layer_get_mask(l):
-            newimg = gimp.Image(l.width,l.height,GRAY)
-            pdb.gimp_edit_copy(pdb.gimp_layer_get_mask(l))
-            newlayer = gimp.Layer(newimg, l.name, l.width, l.height, GRAYA_IMAGE)
-            pdb.gimp_drawable_fill(newlayer, TRANSPARENT_FILL)
-            newimg.add_layer(newlayer)
-            pdb.gimp_floating_sel_anchor(pdb.gimp_edit_paste(newlayer, True))
-            pdb.gimp_invert(newlayer)
-            mask = pdb.gimp_layer_create_mask(newlayer,ADD_COPY_MASK)
-            pdb.gimp_image_add_layer_mask(newimg,newlayer,mask)
-            pdb.gimp_layer_remove_mask(newlayer, 0)
-            pdb.gimp_file_save(newimg, newlayer, os.path.join(layersprefix,maskname), filename)
-            pdb.gimp_image_delete(newimg)
-            siffile.write(mysynfig.layer_image % {\
-             "name":maskname, \
-             "file":os.path.join("%s_layers"%name,maskname), \
-             "blend_method":SYNFIG_BLEND_ALPHA_OVER, \
-             "amount":1.0, \
-             "x":l.width/2*pixelsize, \
-             "y":l.height/2*pixelsize \
-            })
-
-        # adding transform layers
-        if dozoom:
-            siffile.write(mysynfig.layer_zoom%{"name":"%s_scale"%l.name})
-        if dorot:
-            siffile.write(mysynfig.layer_rotate%{"name":"%s_rot"%l.name})
-        if dotrans:
-            siffile.write(mysynfig.layer_translate%{"name":"%s_loc"%l.name})
-
-        if not doswitchgroup:
-            siffile.write(mysynfig.layer_inline_end)
-
-        donelayers += 1
-
-    if applymask:
-        pdb.gimp_image_delete(img)
-
-    if doswitchgroup:
-        siffile.write(mysynfig.layer_switch_end%{"name":switchactive})
-
-    siffile.write(mysynfig.document_end)
-    siffile.close()
-
-############################################################
-# Echo args (for debug usage)
-############################################################
-
-def echo(*args):
-    """Print the arguments on standard output"""
-    print "echo:", args
-
-############################################################
-# Register function
-############################################################
-
-def register_save_handlers():
-    gimp.register_save_handler('file-sifz-save', 'sifz', '')
-
-register(
-    'file-sifz-save', # Function name
-    _("Export document to synfig's (.sfiz) format"), # Blurb / description
-    _("Export document to synfig's (.sfiz) format\nBy default, export invisible layers and put each Gimp layer into a Synfig Group layer"),
-    'AkhIL', # Author
-    ("Creative Commons Attribution 3.0\n2008 - dooglus\n2015-2018 - d-j-a-y"), # Copyright notice
-    '2018-10-23', # Version date
-    "Synfig Studio Export",
-    'RGB*, GRAY*', # Image type
-    [   # Input <save> args. Format (type, name, description, default [, extra])
-        (PF_IMAGE, "image", "Input image", None),
-        (PF_DRAWABLE, "drawable", "Input drawable", None),
-        (PF_STRING, "filename", "The name of the file", None),
-        (PF_STRING, "raw-filename", "The name of the file", None),
-        (PF_STRING, "extra", "extra args", None),
-        # Export SynfigStudio arg
-        (PF_FLOAT,  "span",     _("Image Span"),9.1788),
-        (PF_BOOL,   "doswitchgroup",   _("Group in a single Switch Layer (synfig >= 1.0)"), False),
-        (PF_BOOL,   "doinvisible",   _("Export invisible layers"),True),
-        (PF_BOOL,   "applymask",   _("Apply layer masks"),False),
-        (PF_BOOL,   "dozoom",   _("Add zoom layers"),False),
-        (PF_BOOL,   "dorot",   _("Add rotate layers"),False),
-        (PF_BOOL,   "dotrans",   _("Add translate layers"),False)
-    ],
-    [],
-    export_synfig,
-    on_query = register_save_handlers,
-    menu = '<Save>')
-
-main()
+Gimp.main(SynfigExport.__gtype__, sys.argv)
