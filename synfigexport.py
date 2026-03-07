@@ -41,6 +41,10 @@
 #TODO synfig animation duration option
 #TODO zipped file sif extension not sifz
 
+#REGRESSION
+# the double argument in ui is trunc at 0.01 precision but we need more precisition for image span value
+
+
 #########################################################################
 # GIMP python fu TIPS
 #######################
@@ -77,13 +81,13 @@ from gi.repository import GimpUi
 from gi.repository import GObject
 from gi.repository import GLib
 
-#from gimpfu import *
+# ~ from gimpfu import *
 
 import os
 import gzip
 import string
 
-#from synfigfu import *
+from synfigfu import *
 
 # Localization (l10n)
 #
@@ -92,9 +96,17 @@ import string
 # ~ locale_directory = gimp.locale_directory
 # ~ gettext.install("gimp20-python", locale_directory, unicode=True)
 
+def N_(message): return message
+def _(message): return GLib.dgettext(None, message)
+
+def export_synfig(procedure, doinvisible, applymask, dozoom, dorot, dotrans):
+    echo("mas:",applymask, " rot:",dorot)
+    return procedure.new_return_values(Gimp.PDBStatusType.SUCCESS, GLib.Error())
+
+
 # unicodedata used by valid_file_name
 #import unicodedata
-def export_synfig(procedure, run_mode, image, file, options, metadata, config, data):
+def run(procedure, run_mode, image, file, options, metadata, config, data):
     # ~ def write_file_str(zfile, fname, data):
         # ~ # work around a permission bug in the zipfile library:
         # ~ # http://bugs.python.org/issue3394
@@ -102,23 +114,52 @@ def export_synfig(procedure, run_mode, image, file, options, metadata, config, d
         # ~ zi.external_attr = int("100644", 8) << 16
         # ~ zfile.writestr(zi, data)
 
+    if run_mode == Gimp.RunMode.INTERACTIVE:
+        GimpUi.init("file-synfig-export")
+
+        dialog = GimpUi.ProcedureDialog.new(procedure, config, _("Synfig Studio Export..."))
+
+        # ~ radio_frame = dialog.get_widget("output-format", GimpUi.IntRadioFrame)
+
+        dialog.fill(None)
+
+        if not dialog.run():
+            return procedure.new_return_values(Gimp.PDBStatusType.CANCEL,
+                                               GLib.Error())
+
+    invisible_layers    = config.get_property("do-invisible")
+    mask_layers    = config.get_property("do-mask")
+    zoom_layers = config.get_property("do-zoom")
+    rotate_layers = config.get_property("do-rotate")
+    translate_layers = config.get_property("do-translate")
+
     Gimp.progress_init("Exporting SynfigStudio image")
+
     Gimp.message("Hello world!")
 
+    echo("inv:",invisible_layers, " rot:",rotate_layers)
+    result = export_synfig(procedure, invisible_layers, mask_layers,
+                           zoom_layers, rotate_layers, translate_layers)
+
+    Gimp.progress_end()
     # do what you want to do, then, in case of success, return:
     # ~ return procedure.new_return_values(Gimp.PDBStatusType.SUCCESS, GLib.Error())
-    Gimp.progress_end()
-
     return Gimp.ValueArray.new_from_values([
         GObject.Value(Gimp.PDBStatusType, Gimp.PDBStatusType.SUCCESS)
     ])
 
+############################################################
+# Echo args (for debug usage)
+############################################################
+def echo(*args):
+    """Print the arguments on standard output"""
+    print ("synfigexport>", args)
 
 class SynfigExport (Gimp.PlugIn):
     ## GimpPlugIn virtual methods ##
     def do_set_i18n (self, name): #https://discourse.gnome.org/t/gimp-3-how-to-set-up-localisation-for-my-plug-in/27010
         return False
-        
+
     def do_query_procedures(self):
         return [ 'file-synfig-export' ]
 
@@ -127,7 +168,7 @@ class SynfigExport (Gimp.PlugIn):
         if name == 'file-synfig-export':
             procedure = Gimp.ExportProcedure.new(self, name,
                                                  Gimp.PDBProcType.PLUGIN,
-                                                 False, export_synfig, None)
+                                                 False, run, None)
 
             procedure.set_image_types("RGB*,GRAY*")
 
@@ -142,6 +183,20 @@ class SynfigExport (Gimp.PlugIn):
                                         "Export document to synfig's (.sfiz) format\nBy default, export invisible layers and put each Gimp layer into a Synfig Group layer",
                                         name)
             procedure.set_attribution("AkhIL", "Creative Commons Attribution 3.0\n2008 - dooglus\n2015-2026 - d-j-a-y", "2026-02-XX")
+
+            procedure.add_boolean_argument ("do-invisible",   _("Export _invisible layers"),  _("Export invisible layers"),
+                                            False, GObject.ParamFlags.READWRITE)
+            procedure.add_boolean_argument ("do-mask",   _("Apply _layer masks"),  _("Apply layer masks"),
+                                            False, GObject.ParamFlags.READWRITE)
+            procedure.add_boolean_argument ("do-zoom",   _("Export _zoom layers"), _("Export zoom layers"),
+                                            False, GObject.ParamFlags.READWRITE)
+            procedure.add_boolean_argument ("do-rotate",   _("Export r_otate layers"), _("Export rotate layers"),
+                                            False, GObject.ParamFlags.READWRITE)
+            procedure.add_boolean_argument ("do-translate",   _("Add _translate layers"), _("Export translate layers"),
+                                            False, GObject.ParamFlags.READWRITE)
+            # ~ the double is trunc at 0.01 precision! here we sneed more precisition !
+            # ~ procedure.add_double_argument ("image-span", _("Image _Span"), _("Image Span"),
+                                          # ~ 0.001, 15.0, 9.1788, GObject.ParamFlags.READWRITE)
 
         return procedure
 
