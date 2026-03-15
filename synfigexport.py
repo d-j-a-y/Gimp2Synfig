@@ -84,8 +84,9 @@ from gi.repository import GLib
 # ~ from gimpfu import *
 
 import os
-import gzip
+# ~ import gzip
 import string
+import zipfile
 
 from synfigfu import *
 
@@ -96,36 +97,61 @@ from synfigfu import *
 # ~ locale_directory = gimp.locale_directory
 # ~ gettext.install("gimp20-python", locale_directory, unicode=True)
 
+# unicodedata used by valid_file_name
+#import unicodedata
+
 def N_(message): return message
 def _(message): return GLib.dgettext(None, message)
 
-def export_synfig(procedure, doinvisible, applymask, dozoom, dorot, dotrans):
+def export_synfig(procedure, image, doinvisible, applymask, dozoom, dorot, dotrans):
+    # ~ gimp.message("WARNING : You are running a development version.\nStable version can be catch from https://github.com/d-j-a-y/Gimp2Synfig master branch.")
     echo("mas:",applymask, " rot:",dorot)
+
+
+    if not pdb.gimp_image_is_valid(image):
+        gimp.message(_("The image file is not valid !?"))
+        return
+
+    if not img.filename:
+        gimp.message(_("The original image haven't been saved. Save the image and retry."))
+        return
+
     return procedure.new_return_values(Gimp.PDBStatusType.SUCCESS, GLib.Error())
 
 
-# unicodedata used by valid_file_name
-#import unicodedata
-def run(procedure, run_mode, image, file, options, metadata, config, data):
-    # ~ def write_file_str(zfile, fname, data):
-        # ~ # work around a permission bug in the zipfile library:
-        # ~ # http://bugs.python.org/issue3394
-        # ~ zi = zipfile.ZipInfo(fname)
-        # ~ zi.external_attr = int("100644", 8) << 16
-        # ~ zfile.writestr(zi, data)
+def export_run(procedure, run_mode, image, file, options, metadata, config, data):
+    def write_file_str(zfile, fname, data):
+        # work around a permission bug in the zipfile library:
+        # http://bugs.python.org/issue3394
+        zi = zipfile.ZipInfo(fname)
+        zi.external_attr = int("100644", 8) << 16
+        zfile.writestr(zi, data)
+
+    #TODO check is image exist, check file saved once?
+    # ~ if not pdb.gimp_image_is_valid(image):
+        # ~ gimp.message(_("The image file is not valid !?"))
+        # ~ return
+
+    # ~ if not img.filename:
+        # ~ gimp.message(_("The original image haven't been saved. Save the image and retry."))
+        # ~ return
 
     if run_mode == Gimp.RunMode.INTERACTIVE:
         GimpUi.init("file-synfig-export")
 
         dialog = GimpUi.ProcedureDialog.new(procedure, config, _("Synfig Studio Export..."))
-
-        # ~ radio_frame = dialog.get_widget("output-format", GimpUi.IntRadioFrame)
-
         dialog.fill(None)
 
-        if not dialog.run():
-            return procedure.new_return_values(Gimp.PDBStatusType.CANCEL,
-                                               GLib.Error())
+        # ~ if not dialog.run():
+            # ~ return procedure.new_return_values(Gimp.PDBStatusType.CANCEL,
+                                               # ~ GLib.Error())
+        is_ok_pressed = dialog.run()
+        if not is_ok_pressed:
+            dialog.destroy()
+            return proc.new_return_values(Gimp.PDBStatusType.CANCEL, GLib.Error())
+    else: #fixme not interactive #TODO add console mode ?
+       return procedure.new_return_values(Gimp.PDBStatusType.CANCEL,
+                                           GLib.Error())
 
     invisible_layers    = config.get_property("do-invisible")
     mask_layers    = config.get_property("do-mask")
@@ -136,14 +162,36 @@ def run(procedure, run_mode, image, file, options, metadata, config, data):
     Gimp.progress_init("Exporting SynfigStudio image")
 
     Gimp.message("Hello world!")
-
     echo("inv:",invisible_layers, " rot:",rotate_layers)
-    result = export_synfig(procedure, invisible_layers, mask_layers,
-                           zoom_layers, rotate_layers, translate_layers)
+
+    sifzfile = zipfile.ZipFile(file.peek_path(), 'w', compression=zipfile.ZIP_STORED)
+
+    span = 9.1788
+    imgw = image.get_width()
+    imgh = image.get_height()
+    pixelsize = 1/(imgw**2 + imgh**2)**0.5*span
+
+    mysynfig = SynfigObject()
+
+    sif_header = mysynfig.document_begin %{ \
+     "width":imgw, \
+     "height":imgh, \
+     "xres":image.get_resolution().xresolution*39.37007904, \
+     "yres":image.get_resolution().yresolution*39.37007904, \
+     "xres":90, \
+     "yres":90, \
+     "x":round(imgw*pixelsize/2, 5), \
+     "y":round(imgh*pixelsize/2, 5), \
+     "name":image.get_name() \
+    }
+
+    sif_file_data = sif_header + mysynfig.document_end
+    write_file_str(sifzfile, 'mysinfigfile.sif', sif_file_data)
+
+    sifzfile.close()
 
     Gimp.progress_end()
-    # do what you want to do, then, in case of success, return:
-    # ~ return procedure.new_return_values(Gimp.PDBStatusType.SUCCESS, GLib.Error())
+
     return Gimp.ValueArray.new_from_values([
         GObject.Value(Gimp.PDBStatusType, Gimp.PDBStatusType.SUCCESS)
     ])
@@ -161,14 +209,14 @@ class SynfigExport (Gimp.PlugIn):
         return False
 
     def do_query_procedures(self):
-        return [ 'file-synfig-export' ]
+        return [ 'file-synfig-export' ] #todo check in procedure browser to consistancy
 
     def do_create_procedure(self, name):
         procedure = None
         if name == 'file-synfig-export':
             procedure = Gimp.ExportProcedure.new(self, name,
                                                  Gimp.PDBProcType.PLUGIN,
-                                                 False, run, None)
+                                                 False, export_run, None)
 
             procedure.set_image_types("RGB*,GRAY*")
 
@@ -199,38 +247,6 @@ class SynfigExport (Gimp.PlugIn):
                                           # ~ 0.001, 15.0, 9.1788, GObject.ParamFlags.READWRITE)
 
         return procedure
-
-# ~ def register_save_handlers():
-    # ~ gimp.register_save_handler('file-sifz-save', 'sifz', '')
-
-# ~ register(
-    # ~ 'file-sifz-save', # Function name
-    # ~ _("Export document to synfig's (.sfiz) format"), # Blurb / description
-    # ~ _("Export document to synfig's (.sfiz) format\nBy default, export invisible layers and put each Gimp layer into a Synfig Group layer"),
-    # ~ 'AkhIL', # Author
-    # ~ ("Creative Commons Attribution 3.0\n2008 - dooglus\n2015-2018 - d-j-a-y"), # Copyright notice
-    # ~ '2018-10-23', # Version date
-    # ~ "Synfig Studio Export",
-    # ~ 'RGB*, GRAY*', # Image type
-    # ~ [   # Input <save> args. Format (type, name, description, default [, extra])
-        # ~ (PF_IMAGE, "image", "Input image", None),
-        # ~ (PF_DRAWABLE, "drawable", "Input drawable", None),
-        # ~ (PF_STRING, "filename", "The name of the file", None),
-        # ~ (PF_STRING, "raw-filename", "The name of the file", None),
-        # ~ (PF_STRING, "extra", "extra args", None),
-        # ~ # Export SynfigStudio arg
-        # ~ (PF_FLOAT,  "span",     _("Image Span"),9.1788),
-        # ~ (PF_BOOL,   "doswitchgroup",   _("Group in a single Switch Layer (synfig >= 1.0)"), False),
-        # ~ (PF_BOOL,   "doinvisible",   _("Export invisible layers"),True),
-        # ~ (PF_BOOL,   "applymask",   _("Apply layer masks"),False),
-        # ~ (PF_BOOL,   "dozoom",   _("Add zoom layers"),False),
-        # ~ (PF_BOOL,   "dorot",   _("Add rotate layers"),False),
-        # ~ (PF_BOOL,   "dotrans",   _("Add translate layers"),False)
-    # ~ ],
-    # ~ [],
-    # ~ export_synfig,
-    # ~ on_query = register_save_handlers,
-    # ~ menu = '<Save>')
 
 ############################################################
 # Entry point
