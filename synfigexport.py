@@ -80,35 +80,30 @@ gi.require_version('GimpUi', '3.0')
 from gi.repository import GimpUi
 from gi.repository import GObject
 from gi.repository import GLib
+from gi.repository import Gio
 
-# ~ from gimpfu import *
-
-import os
-# ~ import gzip
-import string
-import zipfile
+import os, string
+import tempfile, zipfile
+# unicodedata used by valid_file_name
+import unicodedata
 
 from synfigfu import *
 
 NESTED_STACK_END = object()
 
-# Localization (l10n)
-#
-# use with _("foo") around all strings, to indicate "translatable"
-# ~ import gettext
-# ~ locale_directory = gimp.locale_directory
-# ~ gettext.install("gimp20-python", locale_directory, unicode=True)
-
-# unicodedata used by valid_file_name
-#import unicodedata
-
 def N_(message): return message
 def _(message): return GLib.dgettext(None, message)
+
+validFilenameChars = "-_.() %s%s" % (string.ascii_letters, string.digits)
+# from http://stackoverflow.com/questions/295135/turn-a-string-into-a-valid-filename-in-python
+def valid_filename(filename):
+    # ~ cleanedFilename = unicodedata.normalize('NFKD', unicode(filename)).encode('ASCII', 'ignore')
+    cleanedFilename = unicodedata.normalize('NFKD', filename).encode('ASCII', 'ignore')
+    return ''.join(c for c in cleanedFilename if c in validFilenameChars)
 
 def export_synfig(procedure, image, doinvisible, applymask, dozoom, dorot, dotrans):
     # ~ gimp.message("WARNING : You are running a development version.\nStable version can be catch from https://github.com/d-j-a-y/Gimp2Synfig master branch.")
     echo("mas:",applymask, " rot:",dorot)
-
 
     if not pdb.gimp_image_is_valid(image):
         gimp.message(_("The image file is not valid !?"))
@@ -128,16 +123,6 @@ def export_run(procedure, run_mode, image, file, options, metadata, config, data
         zi = zipfile.ZipInfo(fname)
         zi.external_attr = int("100644", 8) << 16
         zfile.writestr(zi, data)
-
-    def enumerate_layers(layers):
-        for layer in layers:
-            if not layer.is_group():
-                yield layer
-            else:
-                yield layer
-                for sublayer in enumerate_layers(layer.get_children()):
-                    yield sublayer
-                yield NESTED_STACK_END
 
     #TODO check is image exist, check file saved once?
     # ~ if not pdb.gimp_image_is_valid(image):
@@ -179,6 +164,7 @@ def export_run(procedure, run_mode, image, file, options, metadata, config, data
     echo("inv:",do_invisible_layers, " rot:",do_rotate_layers)
 
     sifzfile = zipfile.ZipFile(file.peek_path(), 'w', compression=zipfile.ZIP_STORED)
+    tempdir = tempfile.mkdtemp('gimp-plugin-file-synfig')
 
     span = 9.1788
     imgw = image.get_width()
@@ -221,6 +207,65 @@ def export_run(procedure, run_mode, image, file, options, metadata, config, data
                       "name":img_name \
                       }
 
+    def store_synfig_layer(image, drawable, path):
+        tmp = os.path.join(tempdir, 'tmp.png')
+        interlace, compression = 0, 2
+
+        width, height = drawable.get_width(), drawable.get_height()
+        tmp_img = Gimp.Image.new(width, height, image.get_base_type())
+        tmp_layer = Gimp.Layer.new_from_drawable (drawable, tmp_img)
+        tmp_img.insert_layer (tmp_layer, None, 0)
+
+        pdb_proc   = Gimp.get_pdb().lookup_procedure('file-png-export')
+        pdb_config = pdb_proc.create_config()
+        pdb_config.set_property('run-mode', Gimp.RunMode.NONINTERACTIVE)
+        pdb_config.set_property('image', tmp_img)
+        pdb_config.set_property('file', Gio.File.new_for_path(tmp))
+        pdb_config.set_property('options', None)
+        pdb_config.set_property('interlaced', interlace)
+        pdb_config.set_property('compression', compression)
+        # write all PNG chunks except oFFs(ets)
+        pdb_config.set_property('bkgd', True)
+        pdb_config.set_property('offs', False)
+        pdb_config.set_property('phys', True)
+        pdb_config.set_property('time', True)
+        pdb_config.set_property('save-transparent', True)
+        pdb_proc.run(pdb_config)
+        if (os.path.exists(tmp)):
+            sifzfile.write(tmp, path)
+            os.remove(tmp)
+        else:
+            print("Gimp:File:Export:Synfig: Error removing ", tmp)
+
+        tmp_img.delete()
+
+    def add_synfig_layer(parent, x, y, opac, gimp_layer, path, is_visible):
+        echo ("    adding layer ",gimp_layer.get_name())
+        active=is_visible
+
+        sifdata = mysynfig.layer_image % {\
+         "name":gimp_layer.get_name(), \
+         "file":path, \
+         "blend_method":SYNFIG_BLEND_COMPOSITE, \
+         "amount":1.0, \
+         "x":x/2*pixelsize, \
+         "y":y/2*pixelsize \
+        }
+
+        store_synfig_layer(image, gimp_layer, path)
+        return sifdata
+
+    def enumerate_gimp_layers(layers):
+        for layer in layers:
+            if not layer.is_group():
+                yield layer
+            else:
+                yield layer
+                for sublayer in enumerate_gimp_layers(layer.get_children()):
+                    yield sublayer
+                yield NESTED_STACK_END
+
+
     # prepare for layers
     parent_groups = []
     i = 0
@@ -229,7 +274,8 @@ def export_run(procedure, run_mode, image, file, options, metadata, config, data
     # Number of top level layers for tracking progress
     lay_cnt = len(layer_stack)
 
-    for lay in enumerate_layers(layer_stack):
+    folder_name = "%s_layers"%os.path.splitext(img_name)[0]
+    for lay in enumerate_gimp_layers(layer_stack):
         prev_lay = i
         if lay is NESTED_STACK_END:
             if parent_groups:
@@ -239,12 +285,20 @@ def export_run(procedure, run_mode, image, file, options, metadata, config, data
         opac = lay.get_opacity () # / 100.0 # needs to be between 0.0 and 1.0
         echo("offsets : ", offset_x, offset_y, "opacity ", opac)
 
+        # ~ valid_image_name = valid_filename(lay.get_name())
+        valid_image_name = (lay.get_name())
+        # making file names
+        filename = "%s.png"%valid_image_name
+        maskname = "%s_mask.png"%valid_image_name
+
         if not parent_groups:
-            path_name = 'data/{:03d}.png'.format(i)
+            path_name = os.path.join(folder_name, filename)
+            # ~ path_name = folder_name + '/{:03d}.png'.format(i)
             i += 1
         else:
-            path_name = 'data/{}-{:03d}.png'.format(
-                parent_groups[-1][1], parent_groups[-1][2])
+            path_name = os.path.join(folder_name, filename)
+            # ~ path_name = folder_name + '/{}-{:03d}.png'.format(
+                # ~ parent_groups[-1][1], parent_groups[-1][2])
             parent_groups[-1][2] += 1
 
         parent = stack if not parent_groups else parent_groups[-1][0]
@@ -256,8 +310,11 @@ def export_run(procedure, run_mode, image, file, options, metadata, config, data
                 # ~ parent_groups[-1][1] + "-{:03d}".format(parent_groups[-1][2]))
             # ~ parent_groups.append([group, group_path , 0])
         else:
-            # ~ add_layer(parent, x, y, opac, lay, path_name, lay.get_visible())
-            echo("add layer", offset_x, offset_y, opac, lay, path_name, lay.get_name(), lay.get_visible())
+            echo("add layer", offset_x, offset_y, opac, lay, path_name, valid_image_name, lay.get_name(), lay.get_visible())
+            if lay.get_visible():
+                sif_file_data += add_synfig_layer(parent, offset_x, offset_y, opac, lay, path_name, "true")
+            elif do_invisible_layers:
+                sif_file_data += add_synfig_layer(parent, offset_x, offset_y, opac, lay, path_name, "false")
 
         if (i > prev_lay):
             Gimp.progress_update(i/lay_cnt)
