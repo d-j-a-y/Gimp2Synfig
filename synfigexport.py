@@ -170,6 +170,7 @@ def export_run(procedure, run_mode, image, file, options, metadata, config, data
     imgw = image.get_width()
     imgh = image.get_height()
     pixelsize = 1/(imgw**2 + imgh**2)**0.5*span
+    imgname = os.path.split(image.get_name())[1]
 
     mysynfig = SynfigObject()
 
@@ -182,11 +183,12 @@ def export_run(procedure, run_mode, image, file, options, metadata, config, data
      "yres":90, \
      "x":round(imgw*pixelsize/2, 5), \
      "y":round(imgh*pixelsize/2, 5), \
-     "name":image.get_name() \
+     "name": imgname \
     }
 
+    sif_file_name = os.path.splitext(imgname)[0] + '.' + mysynfig.file_ext
     sif_file_data = sif_header + mysynfig.document_end
-    write_file_str(sifzfile, 'mysinfigfile.sif', sif_file_data)
+    write_file_str(sifzfile, sif_file_name, sif_file_data)
 
     sifzfile.close()
 

@@ -60,3 +60,4 @@ __Distribution and updating of the code is appreciated.__
 * 2016-02-22  synfig stuff to synfigfu module + fix issue #5 filename forbiden chars
 * 2016-02-25  switch group option
 * 2018-10-23  GIMP 2.10 compliant!
+* 2026        WIP GIMP 3.0

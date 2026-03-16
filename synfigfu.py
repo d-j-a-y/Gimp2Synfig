@@ -32,7 +32,8 @@ SYNFIG_BLEND_ALPHA_OVER=19
 
 class SynfigObject:
     name = 'synfig object'
-    version = '0.0 - draft'
+    version = '0.9wip'
+    file_ext = 'sif'
     ############################################################
     # Synfig Studio layer xml templates
     ############################################################
