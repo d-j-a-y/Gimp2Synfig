@@ -31,22 +31,22 @@ SYNFIG_BLEND_ALPHA_OVER=19
 
 
 class SynfigObject:
-	name = 'synfig object'
-	version = '0.0 - draft'
-	############################################################
-	# Synfig Studio layer xml templates
-	############################################################
-	document_begin = """\
+    name = 'synfig object'
+    version = '0.0 - draft'
+    ############################################################
+    # Synfig Studio layer xml templates
+    ############################################################
+    document_begin = """\
 <?xml version="1.0" encoding="UTF-8"?>
 <canvas version="0.3" width="%(width)i" height="%(height)i" xres="%(xres)f" yres="%(yres)f" \
 view-box="-%(x)f %(y)f %(x)f -%(y)f" >
   <name>%(name)s</name>
   <keyframe time="0f" active="true"/>
 """
-	document_end = """\
+    document_end = """\
 </canvas>
 """
-	layer_inline_begin = """\
+    layer_inline_begin = """\
   <layer type="PasteCanvas" active="%(active)s" version="0.1" desc="%(name)s">
 	<param name="z_depth">
 	  <real value="0.0000000000"/>
@@ -66,12 +66,12 @@ view-box="-%(x)f %(y)f %(x)f -%(y)f" >
 	<param name="canvas">
 	  <canvas xres="10.000000" yres="10.000000">
 """
-	layer_inline_end = """\
+    layer_inline_end = """\
 	  </canvas>
 	</param>
   </layer>
 """
-	layer_image = """\
+    layer_image = """\
 		<layer type="import" active="true" version="0.1" desc="%(name)s">
 		  <param name="z_depth">
 			<real value="0.0000000000"/>
@@ -99,7 +99,7 @@ view-box="-%(x)f %(y)f %(x)f -%(y)f" >
 		  </param>
 		</layer>
 """
-	layer_zoom = """
+    layer_zoom = """
 		<layer type="zoom" active="true" version="0.1" desc="%(name)s">
 		  <param name="amount">
 			<real value="0.0000000000"/>
@@ -112,7 +112,7 @@ view-box="-%(x)f %(y)f %(x)f -%(y)f" >
 		  </param>
 		</layer>
 """
-	layer_rotate = """\
+    layer_rotate = """\
 		<layer type="rotate" active="true" version="0.1" desc="%(name)s">
 		  <param name="origin">
 			<vector>
@@ -125,7 +125,7 @@ view-box="-%(x)f %(y)f %(x)f -%(y)f" >
 		  </param>
 		</layer>
 """
-	layer_translate = """
+    layer_translate = """
 		<layer type="translate" active="true" version="0.1" desc="%(name)s">
 		  <param name="origin">
 			<vector>
@@ -135,7 +135,7 @@ view-box="-%(x)f %(y)f %(x)f -%(y)f" >
 		  </param>
 		</layer>
 """
-	layer_switch_begin = """\
+    layer_switch_begin = """\
 		<layer type="switch" active="true" exclude_from_rendering="false" version="0.0" desc="%(name)s">
 		 <param name="z_depth">
 		   <real value="0.0000000000"/>
@@ -177,7 +177,7 @@ view-box="-%(x)f %(y)f %(x)f -%(y)f" >
 	   <param name="canvas">
 		<canvas>
 """
-	layer_switch_end = """\
+    layer_switch_end = """\
 	  </canvas>
 	</param>
 	<param name="time_dilation">
@@ -198,11 +198,11 @@ view-box="-%(x)f %(y)f %(x)f -%(y)f" >
   </layer>
 """
 #	def __init__(self) :
-	pass #empty class definition
+    pass #empty class definition
 
 # Make usable as a script as well as an importable module
 if __name__ == "__main__":
-	import sys
-	synfigfumainscript = SynfigObject()
-	print ('synfigfu !\n*do nothing API*\n(draft proof of concept mode used by synfigexport.py Gimp to Synfig plugins)\n\n' + synfigfumainscript.name + ' (version : ' + synfigfumainscript.version + ')')
-#	synfigfu(int(sys.argv[1]))
+    import sys
+    synfigfumainscript = SynfigObject()
+    print ('synfigfu !\n*do nothing API*\n(draft proof of concept mode used by synfigexport.py Gimp to Synfig plugins)\n\n' + synfigfumainscript.name + ' (version : ' + synfigfumainscript.version + ')')
+#   synfigfu(int(sys.argv[1]))
