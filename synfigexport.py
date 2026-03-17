@@ -14,7 +14,7 @@
 #   Contributors :
 #       2008 - dooglus
 #FIXME
-#       2015-2018 - d-j-a-y
+#       2015-2026 - d-j-a-y
 #
 #   This code is licensed under
 #   Creative Commons Attribution 3.0 Unported License
@@ -32,6 +32,7 @@
 #   2016-02-22  synfig stuff to synfigfu module + fix #5 filename forbiden chars
 #   2016-02-25  switch group option
 #   2018-10-23  GIMP 2.10 compliant!
+#   2026---WIP  GIMP 3.0 and python3 support!
 #FIXME
 
 #TODO switch layer has option, fix accordlngly the canvas version
@@ -42,7 +43,7 @@
 #TODO zipped file sif extension not sifz
 
 #REGRESSION
-# the double argument in ui is trunc at 0.01 precision but we need more precisition for image span value
+# SPAN is HARDCODED! the double argument in ui is trunc at 0.01 precision!!!
 
 
 #########################################################################
@@ -151,22 +152,22 @@ def export_run(procedure, run_mode, image, file, options, metadata, config, data
        return procedure.new_return_values(Gimp.PDBStatusType.CANCEL,
                                            GLib.Error())
 
-    do_invisible_layers    = config.get_property("do-invisible")
-    do_switch_group    = config.get_property("do-switchgroup")
-    do_mask_layers    = config.get_property("do-mask")
-    do_zoom_layers = config.get_property("do-zoom")
-    do_rotate_layers = config.get_property("do-rotate")
-    do_translate_layers = config.get_property("do-translate")
+    do_invisible_layers     = config.get_property("do-invisible")
+    do_switch_group         = config.get_property("do-switchgroup")
+    do_apply_mask           = config.get_property("do-mask")
+    do_zoom_layers          = config.get_property("do-zoom")
+    do_rotate_layers        = config.get_property("do-rotate")
+    do_translate_layers     = config.get_property("do-translate")
 
-    Gimp.progress_init("Exporting SynfigStudio image")
+    Gimp.progress_init("Exporting SynfigStudio file format")
+    Gimp.message("Start exporting to SynfigStudio file format")
 
-    Gimp.message("Hello world!")
-    echo("inv:",do_invisible_layers, " rot:",do_rotate_layers)
+    echo("file", file.peek_path(), "inv:",do_invisible_layers, " rot:",do_rotate_layers)
 
     sifzfile = zipfile.ZipFile(file.peek_path(), 'w', compression=zipfile.ZIP_STORED)
     tempdir = tempfile.mkdtemp('gimp-plugin-file-synfig')
 
-    span = 9.1788
+    span = 9.1788 #HARDCODED, use to be a property
     imgw = image.get_width()
     imgh = image.get_height()
     pixelsize = 1/(imgw**2 + imgh**2)**0.5*span
@@ -191,16 +192,6 @@ def export_run(procedure, run_mode, image, file, options, metadata, config, data
 
     total_layers = len(image.get_layers())
     echo("total layers : ",total_layers)
-
-    # applying layer masks
-    if do_mask_layers:
-        echo("applymask")
-        # ~ img = img.duplicate()
-        # ~ for l in img.layers:
-            # ~ if not l.visible and not doinvisible:
-                # ~ continue # don't process invisible
-            # ~ if pdb.gimp_layer_get_mask(l):
-                # ~ pdb.gimp_layer_remove_mask(l, 0)
 
     if do_switch_group:
         sif_file_data += mysynfig.layer_switch_begin % {\
@@ -265,24 +256,36 @@ def export_run(procedure, run_mode, image, file, options, metadata, config, data
                     yield sublayer
                 yield NESTED_STACK_END
 
-
     # prepare for layers
     parent_groups = []
     i = 0
-
     layer_stack = image.get_layers()
     # Number of top level layers for tracking progress
     lay_cnt = len(layer_stack)
 
+    #fixme change for file.peek_path().split to get file name from export
     folder_name = "%s_layers"%os.path.splitext(img_name)[0]
+
+    if do_apply_mask:
+        image = image.duplicate()
+
     for lay in enumerate_gimp_layers(layer_stack):
         prev_lay = i
         if lay is NESTED_STACK_END:
             if parent_groups:
                 parent_groups.pop()
             continue
+
+        if not lay.get_visible() and not do_invisible_layers:
+            echo("donotdovisile>>>", lay.get_name())
+            continue
+
+        if lay.get_mask() and not do_apply_mask :
+            echo("domask>>>", lay.get_name()," get mask removed")
+            lay.set_apply_mask(False)
+
         _, offset_x, offset_y = lay.get_offsets()
-        opac = lay.get_opacity () # / 100.0 # needs to be between 0.0 and 1.0
+        opac = lay.get_opacity () / 100.0 # needs to be between 0.0 and 1.0
         echo("offsets : ", offset_x, offset_y, "opacity ", opac)
 
         # ~ valid_image_name = valid_filename(lay.get_name())
@@ -304,13 +307,9 @@ def export_run(procedure, run_mode, image, file, options, metadata, config, data
         parent = stack if not parent_groups else parent_groups[-1][0]
 
         if lay.is_group():
-            echo("add group ",parent, opac, lay, path_name, lay.get_name(), lay.get_visible())
-            # ~ group = add_group_layer(parent, opac, lay, lay.get_visible())
-            # ~ group_path = ("{:03d}".format(i) if not parent_groups else
-                # ~ parent_groups[-1][1] + "-{:03d}".format(parent_groups[-1][2]))
-            # ~ parent_groups.append([group, group_path , 0])
+            echo("add group ",parent, opac, path_name, lay.get_name(), lay.get_visible())
         else:
-            echo("add layer", offset_x, offset_y, opac, lay, path_name, valid_image_name, lay.get_name(), lay.get_visible())
+            echo("add layer", offset_x, offset_y, opac, path_name, valid_image_name, lay.get_name(), lay.get_visible())
             if lay.get_visible():
                 sif_file_data += add_synfig_layer(parent, offset_x, offset_y, opac, lay, path_name, "true")
             elif do_invisible_layers:
@@ -335,16 +334,21 @@ def export_run(procedure, run_mode, image, file, options, metadata, config, data
     if do_translate_layers:
         echo("apply translate")
 
-    switchactive = "fixme"
+    switchactive = "fixme"     #fixme
     if do_switch_group:
         sif_file_data += mysynfig.layer_switch_end%{"name":switchactive}
 
+    if do_apply_mask:
+        image.delete()
+
+    #fixme change for file.peek_path().split to get file name from export
     sif_file_name = os.path.splitext(img_name)[0] + '.' + mysynfig.file_ext
     sif_file_data += mysynfig.document_end
     write_file_str(sifzfile, sif_file_name, sif_file_data)
 
     sifzfile.close()
 
+    Gimp.message("Success exporting to SynfigStudio file format!")
     Gimp.progress_end()
 
     return Gimp.ValueArray.new_from_values([
