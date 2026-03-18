@@ -1,5 +1,7 @@
 # synfigexport.py
 
+# Instable branch gimp3 / python3 - WORK IN PROGRESS
+
 ![Gimp2Synfig screenshot](Gimp2Synfig.png)
 
 Fork of [synfigexport.py](https://sites.google.com/site/akhilman/synfigexport.py)
